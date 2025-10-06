@@ -1,0 +1,27 @@
+<!-- templates/edit_item.html -->
+{% extends "base.html" %}
+{% block content %}
+<h2>Edit Item #{{ item['item_id'] }}</h2>
+
+<form method="post" class="form">
+  <label>Item Name *</label>
+  <input name="item_Name" value="{{ item['item_Name'] }}" required>
+
+  <label>Brand</label>
+  <input name="item_Brand" value="{{ item['item_Brand'] }}">
+
+  <label>Condition (new / old)</label>
+  <input name="item_Condition" value="{{ item['item_Condition'] }}">
+
+  <label>Date Bought (YYYY-MM-DD)</label>
+  <input name="item_Date" value="{{ item['item_Date'] }}">
+
+  <label>Description</label>
+  <textarea name="item_Description" rows="4">{{ item['item_Description'] }}</textarea>
+
+  <div>
+    <button class="btn" type="submit">Save Changes</button>
+    <a class="btn btn-ghost" href="{{ url_for('index') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}
