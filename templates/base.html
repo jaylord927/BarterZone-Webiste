@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BarterZone</title>
+    <title>{{ title if title else "BarterZone" }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <header>
-        <h1>BarterZone</h1>
-        <nav>
-            <a href="/">Home</a>
-            <a href="/add">Add Item</a>
-            <a href="/edit">Edit Item</a>
-        </nav>
-    </header>
+<header>
+    <nav class="navbar">
+        <div class="logo">BarterZone</div>
+        <ul class="nav-links">
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><a href="{{ url_for('register') }}">Register</a></li>
+            <li><a href="{{ url_for('login') }}">Log In</a></li>
+        </ul>
+    </nav>
+</header>
 
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+{% block content %}{% endblock %}
 
-    <footer>
-        <p>&copy; 2025 BarterZone. All rights reserved.</p>
-    </footer>
+<footer>
+    <p>© 2025 BarterZone. All Rights Reserved.</p>
+</footer>
 </body>
 </html>

@@ -1,41 +1,12 @@
-<!-- templates/index.html -->
 {% extends "base.html" %}
 {% block content %}
-<h2>Available Items</h2>
-
-{% if items %}
-  <table class="items-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Item Name</th>
-        <th>Brand</th>
-        <th>Condition</th>
-        <th>Date Bought</th>
-        <th>Description</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for it in items %}
-        <tr>
-          <td>{{ it['item_id'] }}</td>
-          <td>{{ it['item_Name'] }}</td>
-          <td>{{ it['item_Brand'] }}</td>
-          <td>{{ it['item_Condition'] }}</td>
-          <td>{{ it['item_Date'] }}</td>
-          <td>{{ it['item_Description'] }}</td>
-          <td>
-            <a class="btn" href="{{ url_for('edit_item', item_id=it['item_id']) }}">Edit</a>
-            <form method="post" action="{{ url_for('delete_item', item_id=it['item_id']) }}" style="display:inline" onsubmit="return confirm('Delete this item?');">
-              <button class="btn btn-danger" type="submit">Delete</button>
-            </form>
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-{% else %}
-  <p>No items yet. <a href="{{ url_for('add_item') }}">Offer an item</a>.</p>
-{% endif %}
+<section class="hero-section">
+    <div class="overlay">
+        <h1>No Buy. No Sell. Just Exchange.</h1>
+        <div class="auth-buttons">
+            <a href="{{ url_for('register') }}"><button class="register">Register</button></a>
+            <a href="{{ url_for('login') }}"><button class="login">Login</button></a>
+        </div>
+    </div>
+</section>
 {% endblock %}
