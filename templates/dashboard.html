@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-container">
+  <h2>Welcome, {{ session['username'] }}!</h2>
+  <p>Manage your items below:</p>
+  <a href="{{ url_for('add_item') }}" class="btn-primary">+ Add Item</a>
+
+  <table border="1" cellpadding="8" cellspacing="0" style="margin-top:20px; width:100%; border-collapse:collapse;">
+    <tr style="background-color:#0d47a1; color:white;">
+      <th>ID</th><th>Name</th><th>Brand</th><th>Condition</th><th>Date</th><th>Description</th><th>Actions</th>
+    </tr>
+    {% for item in items %}
+    <tr style="background:white; color:#333; text-align:center;">
+      <td>{{ item['items_id'] }}</td>
+      <td>{{ item['item_Name'] }}</td>
+      <td>{{ item['item_Brand'] }}</td>
+      <td>{{ item['item_Condition'] }}</td>
+      <td>{{ item['item_Date'] }}</td>
+      <td>{{ item['item_Description'] }}</td>
+      <td>
+        <a href="{{ url_for('edit_item', id=item['items_id']) }}" style="color:#0d47a1;">Edit</a> |
+        <a href="{{ url_for('delete_item', id=item['items_id']) }}" style="color:red;" onclick="return confirm('Delete this item?');">Delete</a>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align:center;">No items yet. Add one!</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

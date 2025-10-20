@@ -1,14 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Home</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h2>Welcome, {{ username }}!</h2>
-        <p>You are now logged in.</p>
-        <a href="{{ url_for('logout') }}">Logout</a>
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-section">
+  <div class="overlay">
+    <h1>Welcome to BarterZone</h1>
+    <div class="auth-buttons">
+      <a href="{{ url_for('register') }}"><button class="register">Register</button></a>
+      <a href="{{ url_for('login') }}"><button class="login">Login</button></a>
     </div>
-</body>
-</html>
+  </div>
+</section>
+{% endblock %}
