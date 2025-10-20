@@ -1,30 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="auth-container">
-  <h2>Welcome, {{ session['username'] }}!</h2>
-  <p>Manage your items below:</p>
-  <a href="{{ url_for('add_item') }}" class="btn-primary">+ Add Item</a>
+<section class="hero-section">
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 900px;">
+    <h2 style="color:#0d47a1; margin-bottom: 20px;">My Items</h2>
 
-  <table border="1" cellpadding="8" cellspacing="0" style="margin-top:20px; width:100%; border-collapse:collapse;">
-    <tr style="background-color:#0d47a1; color:white;">
-      <th>ID</th><th>Name</th><th>Brand</th><th>Condition</th><th>Date</th><th>Description</th><th>Actions</th>
-    </tr>
-    {% for item in items %}
-    <tr style="background:white; color:#333; text-align:center;">
-      <td>{{ item['items_id'] }}</td>
-      <td>{{ item['item_Name'] }}</td>
-      <td>{{ item['item_Brand'] }}</td>
-      <td>{{ item['item_Condition'] }}</td>
-      <td>{{ item['item_Date'] }}</td>
-      <td>{{ item['item_Description'] }}</td>
-      <td>
-        <a href="{{ url_for('edit_item', id=item['items_id']) }}" style="color:#0d47a1;">Edit</a> |
-        <a href="{{ url_for('delete_item', id=item['items_id']) }}" style="color:red;" onclick="return confirm('Delete this item?');">Delete</a>
-      </td>
-    </tr>
+    {% if items %}
+    <table style="width:100%; border-collapse:collapse; text-align:left;">
+      <thead>
+        <tr style="background-color:#0d47a1; color:white;">
+          <th style="padding:10px;">Name</th>
+          <th style="padding:10px;">Brand</th>
+          <th style="padding:10px;">Condition</th>
+          <th style="padding:10px;">Date</th>
+          <th style="padding:10px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr style="border-bottom:1px solid #ddd;">
+          <td style="padding:10px;">{{ item['item_Name'] }}</td>
+          <td style="padding:10px;">{{ item['item_Brand'] }}</td>
+          <td style="padding:10px;">{{ item['item_Condition'] }}</td>
+          <td style="padding:10px;">{{ item['item_Date'] }}</td>
+          <td style="padding:10px;">
+            <a href="{{ url_for('edit_item', id=item['items_id']) }}" class="btn-edit">Edit</a>
+            <a href="{{ url_for('delete_item', id=item['items_id']) }}" class="btn-delete" onclick="return confirm('Delete this item?')">Delete</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
     {% else %}
-    <tr><td colspan="7" style="text-align:center;">No items yet. Add one!</td></tr>
-    {% endfor %}
-  </table>
-</div>
+      <p>No items added yet.</p>
+    {% endif %}
+
+    <a href="{{ url_for('add_item') }}" class="btn-primary" style="margin-top:20px; display:inline-block;">+ Add New Item</a>
+  </div>
+</section>
 {% endblock %}

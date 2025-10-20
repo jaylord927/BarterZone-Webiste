@@ -1,17 +1,46 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="auth-container">
-  <h2>Create Account</h2>
-  <form method="POST">
-    <input type="text" name="username" placeholder="Username" required>
-    <input type="email" name="email" placeholder="Email" required>
-    <input type="password" name="password" placeholder="Password" required>
-    <input type="text" name="birthdate" placeholder="Birthdate (YYYY-MM-DD)">
-    <input type="text" name="location" placeholder="Location">
-    <button type="submit" class="btn-primary">Register</button>
-  </form>
-  <div class="alt-link">
-    <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - BarterZone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <!-- ===== Navbar ===== -->
+  <div class="navbar">
+    <div class="logo">BarterZone</div>
+    <ul class="nav-links">
+      <li><a href="{{ url_for('homepage') }}">Home</a></li>
+      <li><a href="{{ url_for('login') }}">Login</a></li>
+      <li><a href="{{ url_for('register') }}">Register</a></li>
+    </ul>
   </div>
-</div>
-{% endblock %}
+
+  <!-- ===== Hero Section ===== -->
+  <div class="hero-section">
+    <div class="overlay">
+      <div class="auth-box">
+        <h2>Create Account</h2>
+        <form method="POST" action="{{ url_for('register') }}">
+          <input type="text" name="username" placeholder="Username" required>
+          <input type="email" name="email" placeholder="Email" required>
+          <input type="password" name="password" placeholder="Password" required>
+          <input type="text" name="birthdate" placeholder="Birthdate (YYYY-MM-DD)">
+          <input type="text" name="location" placeholder="Location">
+          <button type="submit" class="btn-primary">Register</button>
+        </form>
+        <p class="alt-link">
+          Already have an account?
+          <a href="{{ url_for('login') }}">Login here</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Footer ===== -->
+  <footer>
+    <p>© 2025 BarterZone. All rights reserved.</p>
+  </footer>
+</body>
+</html>

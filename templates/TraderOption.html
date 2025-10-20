@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-section">
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 900px; width:100%; padding:20px; border-radius:10px;">
+
+    {% if mode == 'view' %}
+      <h2 style="color:#0d47a1; margin-bottom:20px;">My Items</h2>
+
+      {% if items %}
+      <table style="width:100%; border-collapse:collapse; text-align:left;">
+        <thead>
+          <tr style="background-color:#0d47a1; color:white;">
+            <th style="padding:10px;">Name</th>
+            <th style="padding:10px;">Brand</th>
+            <th style="padding:10px;">Condition</th>
+            <th style="padding:10px;">Date</th>
+            <th style="padding:10px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr style="border-bottom:1px solid #ddd;">
+            <td style="padding:10px;">{{ item[2] }}</td>
+            <td style="padding:10px;">{{ item[3] }}</td>
+            <td style="padding:10px;">{{ item[4] }}</td>
+            <td style="padding:10px;">{{ item[5] }}</td>
+            <td style="padding:10px;">
+              <a href="{{ url_for('edit_item', id=item[0]) }}" class="btn-edit">Edit</a>
+              <a href="{{ url_for('delete_item', id=item[0]) }}" class="btn-delete" onclick="return confirm('Delete this item?')">Delete</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <p>No items added yet.</p>
+      {% endif %}
+
+      <a href="{{ url_for('add_item') }}" class="btn-primary" style="margin-top:20px; display:inline-block;">+ Add New Item</a>
+
+    {% elif mode == 'add' %}
+      <h2 style="color:#0d47a1; margin-bottom: 20px;">Add New Item</h2>
+      <form method="POST" style="display:flex; flex-direction:column; align-items:center;">
+        <input type="text" name="item_Name" placeholder="Item Name" required class="form-field">
+        <input type="text" name="item_Brand" placeholder="Brand" class="form-field">
+        <input type="text" name="item_Condition" placeholder="Condition" class="form-field">
+        <input type="text" name="item_Date" placeholder="Date (YYYY-MM-DD)" class="form-field">
+        <textarea name="item_Description" placeholder="Description" class="form-field" style="height:100px;"></textarea>
+        <button type="submit" class="btn-primary">Add Item</button>
+      </form>
+
+    {% elif mode == 'edit' %}
+      <h2 style="color:#0d47a1; margin-bottom: 20px;">Edit Item</h2>
+      <form method="POST" style="display:flex; flex-direction:column; align-items:center;">
+        <input type="text" name="item_Name" value="{{ item[2] }}" required class="form-field">
+        <input type="text" name="item_Brand" value="{{ item[3] }}" class="form-field">
+        <input type="text" name="item_Condition" value="{{ item[4] }}" class="form-field">
+        <input type="text" name="item_Date" value="{{ item[5] }}" class="form-field">
+        <textarea name="item_Description" class="form-field" style="height:100px;">{{ item[6] }}</textarea>
+        <button type="submit" class="btn-primary">Update Item</button>
+      </form>
+
+    {% elif mode == 'search' %}
+      <h2 style="color:#0d47a1;">Search Results for "{{ query }}"</h2>
+      {% if items %}
+      <table style="width:100%; border-collapse:collapse; text-align:left;">
+        <thead>
+          <tr style="background-color:#0d47a1; color:white;">
+            <th style="padding:10px;">Name</th>
+            <th style="padding:10px;">Brand</th>
+            <th style="padding:10px;">Condition</th>
+            <th style="padding:10px;">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr style="border-bottom:1px solid #ddd;">
+            <td style="padding:10px;">{{ item[2] }}</td>
+            <td style="padding:10px;">{{ item[3] }}</td>
+            <td style="padding:10px;">{{ item[4] }}</td>
+            <td style="padding:10px;">{{ item[5] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <p>No matching items found.</p>
+      {% endif %}
+      <a href="{{ url_for('dashboard') }}" class="btn-primary" style="margin-top:20px;">Back to My Items</a>
+
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

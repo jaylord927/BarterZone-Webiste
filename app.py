@@ -1,188 +1,207 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import sqlite3
+import os
 
 app = Flask(__name__)
-app.secret_key = "barterzone_secret"
+app.secret_key = 'secretkey'
 
-# --- Database Helper ---
-def get_db_connection():
-    conn = sqlite3.connect('barterzone.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+# =====================
+# DATABASE SETUP
+# =====================
+DB_NAME = "barterzone.db"
 
-# --- Initialize Database (run once) ---
+
 def init_db():
-    conn = get_db_connection()
-    c = conn.cursor()
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        );
+        """)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS items (
+            items_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            item_Name TEXT,
+            item_Brand TEXT,
+            item_Condition TEXT,
+            item_Date TEXT,
+            item_Description TEXT,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        );
+        """)
 
-    # Users table
-    c.execute('''CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        email TEXT,
-        password TEXT NOT NULL,
-        birthdate TEXT,
-        location TEXT
-    )''')
 
-    # Items table
-    c.execute('''CREATE TABLE IF NOT EXISTS tbl_items (
-        items_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_Name TEXT NOT NULL,
-        item_Brand TEXT,
-        item_Condition TEXT,
-        item_Date TEXT,
-        item_Description TEXT,
-        trader_id INTEGER,
-        FOREIGN KEY (trader_id) REFERENCES users (id)
-    )''')
+# Ensure DB exists
+if not os.path.exists(DB_NAME):
+    init_db()
 
-    conn.commit()
-    conn.close()
+# =====================
+# ROUTES
+# =====================
 
-# --- Home Page ---
 @app.route('/')
 def index():
-    return render_template('home.html')
+    """Homepage"""
+    return render_template('homepage.html')
 
-# --- Register ---
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    """User registration"""
     if request.method == 'POST':
         username = request.form['username']
-        email = request.form['email']
         password = request.form['password']
-        birthdate = request.form['birthdate']
-        location = request.form['location']
 
-        conn = get_db_connection()
-        try:
-            conn.execute("""
-                INSERT INTO users (username, email, password, birthdate, location)
-                VALUES (?, ?, ?, ?, ?)
-            """, (username, email, password, birthdate, location))
-            conn.commit()
-            flash("Registration successful! Please log in.", "success")
-            return redirect(url_for('login'))
-        except sqlite3.IntegrityError:
-            flash("Username already exists. Try another.", "error")
-        finally:
-            conn.close()
+        with sqlite3.connect(DB_NAME) as conn:
+            try:
+                conn.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+                flash('Registration successful! You can now login.', 'success')
+                return redirect(url_for('login'))
+            except sqlite3.IntegrityError:
+                flash('Username already exists!', 'error')
     return render_template('register.html')
 
-# --- Login ---
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """User login"""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
 
-        conn = get_db_connection()
-        user = conn.execute(
-            "SELECT * FROM users WHERE username=? AND password=?",
-            (username, password)
-        ).fetchone()
-        conn.close()
-
-        if user:
-            session['user_id'] = user['id']
-            session['username'] = user['username']
-            flash(f"Welcome back, {user['username']}!", "success")
-            return redirect(url_for('dashboard'))
-        else:
-            flash("Invalid username or password.", "error")
-
+        with sqlite3.connect(DB_NAME) as conn:
+            user = conn.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password)).fetchone()
+            if user:
+                session['user_id'] = user[0]
+                session['username'] = user[1]
+                flash('Login successful!', 'success')
+                return redirect(url_for('dashboard'))
+            else:
+                flash('Invalid username or password', 'error')
     return render_template('login.html')
 
-# --- Logout ---
+
 @app.route('/logout')
 def logout():
+    """Logout"""
     session.clear()
-    flash("You have been logged out.", "info")
+    flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
 
-# --- Dashboard ---
+
 @app.route('/dashboard')
 def dashboard():
+    """User dashboard showing all items"""
     if 'user_id' not in session:
+        flash('Please login first.', 'warning')
         return redirect(url_for('login'))
 
-    conn = get_db_connection()
-    items = conn.execute(
-        "SELECT * FROM tbl_items WHERE trader_id=?",
-        (session['user_id'],)
-    ).fetchall()
-    conn.close()
-    return render_template('dashboard.html', items=items)
+    user_id = session['user_id']
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        items = conn.execute("SELECT * FROM items WHERE user_id=?", (user_id,)).fetchall()
+    return render_template('TraderOption.html', items=items, mode='view')
 
-# --- Add Item ---
+
 @app.route('/add_item', methods=['GET', 'POST'])
 def add_item():
+    """Add new item"""
     if 'user_id' not in session:
+        flash('Please login first.', 'warning')
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        name = request.form['item_Name']
-        brand = request.form['item_Brand']
-        condition = request.form['item_Condition']
-        date = request.form['item_Date']
-        desc = request.form['item_Description']
+        data = (
+            session['user_id'],
+            request.form['item_Name'],
+            request.form['item_Brand'],
+            request.form['item_Condition'],
+            request.form['item_Date'],
+            request.form['item_Description']
+        )
 
-        conn = get_db_connection()
-        conn.execute("""
-            INSERT INTO tbl_items (item_Name, item_Brand, item_Condition, item_Date, item_Description, trader_id)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (name, brand, condition, date, desc, session['user_id']))
-        conn.commit()
-        conn.close()
+        with sqlite3.connect(DB_NAME) as conn:
+            conn.execute("""
+                INSERT INTO items (user_id, item_Name, item_Brand, item_Condition, item_Date, item_Description)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, data)
 
-        flash("Item added successfully!", "success")
+        flash('Item added successfully!', 'success')
         return redirect(url_for('dashboard'))
 
-    return render_template('add_item.html')
+    return render_template('TraderOption.html', mode='add')
 
-# --- Edit Item ---
+
 @app.route('/edit_item/<int:id>', methods=['GET', 'POST'])
 def edit_item(id):
-    conn = get_db_connection()
-    item = conn.execute("SELECT * FROM tbl_items WHERE items_id=?", (id,)).fetchone()
+    """Edit existing item"""
+    if 'user_id' not in session:
+        flash('Please login first.', 'warning')
+        return redirect(url_for('login'))
 
-    if not item:
-        flash("Item not found.", "error")
-        conn.close()
-        return redirect(url_for('dashboard'))
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        item = conn.execute("SELECT * FROM items WHERE items_id=? AND user_id=?", (id, session['user_id'])).fetchone()
+        if not item:
+            flash('Item not found.', 'error')
+            return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
-        name = request.form['item_Name']
-        brand = request.form['item_Brand']
-        condition = request.form['item_Condition']
-        date = request.form['item_Date']
-        desc = request.form['item_Description']
+        data = (
+            request.form['item_Name'],
+            request.form['item_Brand'],
+            request.form['item_Condition'],
+            request.form['item_Date'],
+            request.form['item_Description'],
+            id,
+            session['user_id']
+        )
 
-        conn.execute("""
-            UPDATE tbl_items
-            SET item_Name=?, item_Brand=?, item_Condition=?, item_Date=?, item_Description=?
-            WHERE items_id=?
-        """, (name, brand, condition, date, desc, id))
-        conn.commit()
-        conn.close()
+        with sqlite3.connect(DB_NAME) as conn:
+            conn.execute("""
+                UPDATE items
+                SET item_Name=?, item_Brand=?, item_Condition=?, item_Date=?, item_Description=?
+                WHERE items_id=? AND user_id=?
+            """, data)
 
-        flash("Item updated successfully!", "success")
+        flash('Item updated successfully!', 'success')
         return redirect(url_for('dashboard'))
 
-    conn.close()
-    return render_template('edit_item.html', item=item)
+    return render_template('TraderOption.html', item=item, mode='edit')
 
-# --- Delete Item ---
+
 @app.route('/delete_item/<int:id>')
 def delete_item(id):
-    conn = get_db_connection()
-    conn.execute("DELETE FROM tbl_items WHERE items_id=?", (id,))
-    conn.commit()
-    conn.close()
-    flash("Item deleted successfully!", "info")
+    """Delete an item"""
+    if 'user_id' not in session:
+        flash('Please login first.', 'warning')
+        return redirect(url_for('login'))
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.execute("DELETE FROM items WHERE items_id=? AND user_id=?", (id, session['user_id']))
+
+    flash('Item deleted successfully!', 'info')
     return redirect(url_for('dashboard'))
 
+
+@app.route('/search_items')
+def search_items():
+    """Search bar"""
+    query = request.args.get('q', '')
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        items = conn.execute("""
+            SELECT * FROM items
+            WHERE item_Name LIKE ? OR item_Brand LIKE ? OR item_Description LIKE ?
+        """, (f"%{query}%", f"%{query}%", f"%{query}%")).fetchall()
+    return render_template('TraderOption.html', items=items, mode='search', query=query)
+
+
+# =====================
+# RUN APP
+# =====================
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)

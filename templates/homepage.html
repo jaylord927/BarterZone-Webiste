@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarterZone</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- ===== Navbar ===== -->
+    <div class="navbar">
+        <div class="logo">BarterZone</div>
+        <ul class="nav-links">
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><a href="{{ url_for('login') }}">Login</a></li>
+            <li><a href="{{ url_for('register') }}">Register</a></li>
+        </ul>
+    </div>
+
+    <!-- ===== Hero Section ===== -->
+    <div class="hero-section">
+        <div class="overlay">
+            <h1>Find What You Need, Offer What You Don’t</h1>
+
+            <form class="search-box" action="{{ url_for('search_items') }}" method="get">
+                <input type="text" name="q" placeholder="Search items...">
+                <button type="submit" class="search-btn">Search</button>
+            </form>
+
+            <div class="action-buttons">
+                <button class="want">I Want</button>
+                <button class="give">I Give</button><br>
+                <button class="register" onclick="window.location.href='{{ url_for('register') }}'">Register</button>
+                <button class="login" onclick="window.location.href='{{ url_for('login') }}'">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Footer ===== -->
+    <footer>
+        <p>© 2025 BarterZone. All rights reserved.</p>
+    </footer>
+</body>
+</html>
