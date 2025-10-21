@@ -211,15 +211,19 @@ def delete_item(id):
 
 @app.route('/search_items')
 def search_items():
-    """Search bar"""
+    """Search bar with complete item and trader details"""
     query = request.args.get('q', '')
     with sqlite3.connect(DB_NAME) as conn:
         conn.row_factory = sqlite3.Row
         items = conn.execute("""
-            SELECT * FROM items
-            WHERE item_Name LIKE ? OR item_Brand LIKE ? OR item_Description LIKE ?
-        """, (f"%{query}%", f"%{query}%", f"%{query}%")).fetchall()
-    return render_template('TraderOption.html', items=items, mode='search', query=query)
+            SELECT i.*, u.username, u.full_name, u.location, u.contact
+            FROM items i
+            JOIN users u ON i.user_id = u.id
+            WHERE i.item_Name LIKE ? OR i.item_Brand LIKE ? OR i.item_Description LIKE ?
+            OR u.username LIKE ? OR u.full_name LIKE ?
+        """, (f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%")).fetchall()
+
+    return render_template('search_results.html', items=items, query=query)
 
 
 # NEW ROUTE: View Other Traders' Items
@@ -410,9 +414,11 @@ def respond_trade(trade_id):
     return redirect(url_for('view_trade_requests'))
 
 
+# Update the trade_history route in app.py
+
 @app.route('/trade_history')
 def trade_history():
-    """View trade history"""
+    """View trade history with receipt tracking"""
     if 'user_id' not in session:
         flash('Please login first.', 'warning')
         return redirect(url_for('login'))
@@ -423,22 +429,74 @@ def trade_history():
         conn.row_factory = sqlite3.Row
 
         history = conn.execute("""
-            SELECT h.*,
+            SELECT t.*,
                    oi.item_Name as offer_item_name,
                    ti.item_Name as target_item_name,
                    offer_user.username as offer_username,
-                   target_user.username as target_username
-            FROM trade_history h
-            LEFT JOIN items oi ON h.offer_item_id = oi.items_id
-            LEFT JOIN items ti ON h.target_item_id = ti.items_id
-            JOIN users offer_user ON h.offer_user_id = offer_user.id
-            JOIN users target_user ON h.target_user_id = target_user.id
-            WHERE h.offer_user_id = ? OR h.target_user_id = ?
-            ORDER BY h.trade_date_completed DESC
+                   offer_user.full_name as offer_full_name,
+                   target_user.username as target_username,
+                   target_user.full_name as target_full_name
+            FROM trades t
+            LEFT JOIN items oi ON t.offer_item_id = oi.items_id
+            LEFT JOIN items ti ON t.target_item_id = ti.items_id
+            JOIN users offer_user ON t.offer_user_id = offer_user.id
+            JOIN users target_user ON t.target_user_id = target_user.id
+            WHERE (t.offer_user_id = ? OR t.target_user_id = ?) 
+            AND t.trade_status IN ('accepted', 'completed')
+            ORDER BY t.trade_date DESC
         """, (user_id, user_id)).fetchall()
 
-    return render_template('trade_history.html', history=history)
+    return render_template('trade_history.html', history=history, user_id=user_id)
 
+
+@app.route('/mark_item_received/<int:trade_id>', methods=['POST'])
+def mark_item_received(trade_id):
+    """Mark item as received by user"""
+    if 'user_id' not in session:
+        flash('Please login first.', 'warning')
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        # Verify user is part of this trade
+        trade = conn.execute(
+            "SELECT * FROM trades WHERE trade_id = ? AND (offer_user_id = ? OR target_user_id = ?)",
+            (trade_id, user_id, user_id)
+        ).fetchone()
+
+        if not trade:
+            flash('Trade not found.', 'error')
+            return redirect(url_for('trade_history'))
+
+        # Determine which column to update
+        if trade[1] == user_id:  # offer_user_id
+            conn.execute(
+                "UPDATE trades SET offer_received = 1 WHERE trade_id = ?",
+                (trade_id,)
+            )
+        else:  # target_user_id
+            conn.execute(
+                "UPDATE trades SET target_received = 1 WHERE trade_id = ?",
+                (trade_id,)
+            )
+
+        # Check if both users have received their items
+        updated_trade = conn.execute(
+            "SELECT offer_received, target_received FROM trades WHERE trade_id = ?",
+            (trade_id,)
+        ).fetchone()
+
+        if updated_trade[0] and updated_trade[1]:
+            # Both users have received items, mark trade as completed
+            conn.execute(
+                "UPDATE trades SET trade_status = 'completed' WHERE trade_id = ?",
+                (trade_id,)
+            )
+
+        flash('Item marked as received!', 'success')
+
+    return redirect(url_for('trade_history'))
 
 # Add these messaging routes after your existing routes
 

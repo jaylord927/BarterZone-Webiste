@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="hero-section">
-  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 900px; width:100%; padding:20px; border-radius:10px;">
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 1200px; width:100%; padding:20px; border-radius:10px;">
 
     {% if mode == 'view' %}
       <h2 style="color:#0d47a1; margin-bottom:20px;">My Items</h2>
@@ -10,21 +10,21 @@
       <table style="width:100%; border-collapse:collapse; text-align:left;">
         <thead>
           <tr style="background-color:#0d47a1; color:white;">
-            <th style="padding:10px;">Name</th>
-            <th style="padding:10px;">Brand</th>
-            <th style="padding:10px;">Condition</th>
-            <th style="padding:10px;">Date</th>
-            <th style="padding:10px;">Actions</th>
+            <th style="padding:12px;">Item Name</th>
+            <th style="padding:12px;">Brand</th>
+            <th style="padding:12px;">Condition</th>
+            <th style="padding:12px;">Date</th>
+            <th style="padding:12px;">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for item in items %}
           <tr style="border-bottom:1px solid #ddd;">
-            <td style="padding:10px;">{{ item[2] }}</td>
-            <td style="padding:10px;">{{ item[3] }}</td>
-            <td style="padding:10px;">{{ item[4] }}</td>
-            <td style="padding:10px;">{{ item[5] }}</td>
-            <td style="padding:10px;">
+            <td style="padding:12px;">{{ item[2] }}</td>
+            <td style="padding:12px;">{{ item[3] }}</td>
+            <td style="padding:12px;">{{ item[4] }}</td>
+            <td style="padding:12px;">{{ item[5] }}</td>
+            <td style="padding:12px;">
               <a href="{{ url_for('edit_item', id=item[0]) }}" class="btn-edit">Edit</a>
               <a href="{{ url_for('delete_item', id=item[0]) }}" class="btn-delete" onclick="return confirm('Delete this item?')">Delete</a>
             </td>
@@ -38,7 +38,7 @@
 
       <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
         <a href="{{ url_for('add_item') }}" class="btn-primary">+ Add New Item</a>
-        <a href="{{ url_for('other_traders_items') }}" class="btn-primary" style="background-color:#546e7a;">View Other Traders' Items</a>
+        <a href="{{ url_for('other_traders_items') }}" class="btn-primary" style="background-color:#546e7a;">View All Other's Items</a>
       </div>
 
     {% elif mode == 'add' %}
@@ -64,76 +64,127 @@
       </form>
 
     {% elif mode == 'search' %}
-      <h2 style="color:#0d47a1;">Search Results for "{{ query }}"</h2>
+      <h2 style="color:#0d47a1; margin-bottom:20px;">Search Results for "{{ query }}"</h2>
+
       {% if items %}
-      <table style="width:100%; border-collapse:collapse; text-align:left;">
-        <thead>
-          <tr style="background-color:#0d47a1; color:white;">
-            <th style="padding:10px;">Name</th>
-            <th style="padding:10px;">Brand</th>
-            <th style="padding:10px;">Condition</th>
-            <th style="padding:10px;">Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in items %}
-          <tr style="border-bottom:1px solid #ddd;">
-            <td style="padding:10px;">{{ item[2] }}</td>
-            <td style="padding:10px;">{{ item[3] }}</td>
-            <td style="padding:10px;">{{ item[4] }}</td>
-            <td style="padding:10px;">{{ item[5] }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div style="overflow-x: auto;">
+        <table style="width:100%; border-collapse:collapse; text-align:left;">
+          <thead>
+            <tr style="background-color:#0d47a1; color:white;">
+              <th style="padding:12px;">Trader</th>
+              <th style="padding:12px;">Item Name</th>
+              <th style="padding:12px;">Brand</th>
+              <th style="padding:12px;">Condition</th>
+              <th style="padding:12px;">Date</th>
+              <th style="padding:12px;">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+            <tr style="border-bottom:1px solid #ddd;">
+              <td style="padding:12px; font-weight:bold; color:#0d47a1;">
+                {{ item['full_name'] or item['username'] }}
+              </td>
+              <td style="padding:12px; font-weight:bold;">{{ item['item_Name'] }}</td>
+              <td style="padding:12px;">{{ item['item_Brand'] or 'N/A' }}</td>
+              <td style="padding:12px;">{{ item['item_Condition'] or 'N/A' }}</td>
+              <td style="padding:12px;">{{ item['item_Date'] or 'N/A' }}</td>
+              <td style="padding:12px; max-width: 200px;">
+                {% if item['item_Description'] %}
+                  {{ item['item_Description'] }}
+                {% else %}
+                  <span style="color: #999;">No description</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top: 15px; color: #666;">Found {{ items|length }} item(s)</p>
       {% else %}
         <p>No matching items found.</p>
       {% endif %}
-      <a href="{{ url_for('dashboard') }}" class="btn-primary" style="margin-top:20px;">Back to My Items</a>
+
+      <div style="margin-top:20px;">
+        <a href="{{ url_for('dashboard') }}" class="btn-primary">Back to My Items</a>
+        <a href="{{ url_for('other_traders_items') }}" class="btn-primary" style="background-color: #546e7a; margin-left:10px;">View All Other's Items</a>
+      </div>
 
     {% elif mode == 'other_traders' %}
-      <h2 style="color:#0d47a1; margin-bottom:20px;">Other Traders' Items</h2>
+      <h2 style="color:#0d47a1; margin-bottom:20px;">All Items</h2>
       <p style="margin-bottom:20px; color:#666;">You are logged in as: <strong>{{ session.username }}</strong></p>
 
       {% if items %}
-      <table style="width:100%; border-collapse:collapse; text-align:left;">
-        <thead>
-          <tr style="background-color:#0d47a1; color:white;">
-            <th style="padding:10px;">Item Name</th>
-            <th style="padding:10px;">Brand</th>
-            <th style="padding:10px;">Condition</th>
-            <th style="padding:10px;">Date</th>
-            <th style="padding:10px;">Trader</th>
-            <th style="padding:10px;">Location</th>
-            <th style="padding:10px;">Contact</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in items %}
-          <tr style="border-bottom:1px solid #ddd;">
-            <td style="padding:10px;">{{ item['item_Name'] }}</td>
-            <td style="padding:10px;">{{ item['item_Brand'] }}</td>
-            <td style="padding:10px;">{{ item['item_Condition'] }}</td>
-            <td style="padding:10px;">{{ item['item_Date'] }}</td>
-            <td style="padding:10px;">{{ item['full_name'] or item['username'] }}</td>
-            <td style="padding:10px;">{{ item['location'] or 'N/A' }}</td>
-            <td style="padding:10px;">{{ item['contact'] or 'N/A' }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div style="overflow-x: auto;">
+        <table style="width:100%; border-collapse:collapse; text-align:left;">
+          <thead>
+            <tr style="background-color:#0d47a1; color:white;">
+              <th style="padding:12px;">Item Name</th>
+              <th style="padding:12px;">Brand</th>
+              <th style="padding:12px;">Condition</th>
+              <th style="padding:12px;">Date Bought</th>
+              <th style="padding:12px;">Description</th>
+              <th style="padding:12px;">Trader</th>
+              <th style="padding:12px;">Location</th>
+              <th style="padding:12px;">Contact</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+            <tr style="border-bottom:1px solid #ddd;">
+              <td style="padding:12px; font-weight:bold;">{{ item['item_Name'] }}</td>
+              <td style="padding:12px;">{{ item['item_Brand'] or 'N/A' }}</td>
+              <td style="padding:12px;">{{ item['item_Condition'] or 'N/A' }}</td>
+              <td style="padding:12px;">{{ item['item_Date'] or 'N/A' }}</td>
+              <td style="padding:12px; max-width: 200px;">
+                {% if item['item_Description'] %}
+                  {{ item['item_Description'] }}
+                {% else %}
+                  <span style="color: #999;">No description</span>
+                {% endif %}
+              </td>
+              <td style="padding:12px; font-weight:bold; color:#0d47a1;">{{ item['full_name'] or item['username'] }}</td>
+              <td style="padding:12px;">
+                {% if item['location'] %}
+                  📍 {{ item['location'] }}
+                {% else %}
+                  <span style="color: #999;">N/A</span>
+                {% endif %}
+              </td>
+              <td style="padding:12px;">
+                {% if item['contact'] %}
+                  📞 {{ item['contact'] }}
+                {% else %}
+                  <span style="color: #999;">N/A</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
       <div style="margin-top:20px; padding:15px; background-color:#e8f5e8; border-radius:5px;">
         <p style="margin:0; color:#2e7d32;">
-          <strong>Tip:</strong> You can use the "Request Trade" feature (coming soon) to make an offer on one of these items.
+          <strong>Ready to trade?</strong> Use the "Request Trade" feature to make an offer on any of these items.
         </p>
       </div>
 
       {% else %}
-        <p>No items found from other traders at the moment.</p>
+        <div style="text-align: center; padding: 40px;">
+          <h3 style="color:#666; margin-bottom:15px;">No Items Available</h3>
+          <p style="color:#999; margin-bottom:20px;">No items found from other traders at the moment.</p>
+          <a href="{{ url_for('dashboard') }}" class="btn-primary">Back to My Items</a>
+        </div>
       {% endif %}
 
-      <a href="{{ url_for('dashboard') }}" class="btn-primary" style="margin-top:20px;">Back to My Items</a>
+      {% if items %}
+      <div style="margin-top:20px;">
+        <a href="{{ url_for('dashboard') }}" class="btn-primary">Back to My Items</a>
+        <a href="{{ url_for('request_trade') }}" class="btn-primary" style="background-color: #ff9800; margin-left:10px;">Request Trade</a>
+      </div>
+      {% endif %}
 
     {% endif %}
   </div>

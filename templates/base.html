@@ -14,13 +14,12 @@
             <li><a href="{{ url_for('index') }}">Home</a></li>
             {% if session.user_id %}
                 <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                <li><a href="{{ url_for('other_traders_items') }}">Browse Items</a></li>
+                <li><a href="{{ url_for('other_traders_items') }}">All Items</a></li>
                 <li><a href="{{ url_for('request_trade') }}">Request Trade</a></li>
                 <li><a href="{{ url_for('view_trade_requests') }}">Trade Requests</a></li>
                 <li><a href="{{ url_for('trade_history') }}">Trade History</a></li>
                 <li><a href="{{ url_for('send_message') }}">Send Message</a></li>
                 <li><a href="{{ url_for('view_messages') }}">Messages</a></li>
-                <!-- PROFILE LINK -->
                 <li><a href="{{ url_for('profile') }}">Profile</a></li>
                 <li><a href="{{ url_for('logout') }}">Logout ({{ session.username }})</a></li>
             {% else %}

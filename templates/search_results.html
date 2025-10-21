@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-section">
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 1200px; width:100%; padding:20px; border-radius:10px;">
+    
+    <h2 style="color:#0d47a1; margin-bottom:20px;">Search Results for "{{ query }}"</h2>
+    
+    {% if items %}
+    <div style="overflow-x: auto;">
+      <table style="width:100%; border-collapse:collapse; text-align:left;">
+        <thead>
+          <tr style="background-color:#0d47a1; color:white;">
+            <th style="padding:12px;">Trader Name</th>
+            <th style="padding:12px;">Item Name</th>
+            <th style="padding:12px;">Brand</th>
+            <th style="padding:12px;">Condition</th>
+            <th style="padding:12px;">Date Bought</th>
+            <th style="padding:12px;">Description</th>
+            <th style="padding:12px;">Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr style="border-bottom:1px solid #ddd;">
+            <td style="padding:12px; font-weight:bold; color:#0d47a1;">
+              {{ item['full_name'] or item['username'] }}
+            </td>
+            <td style="padding:12px; font-weight:bold;">{{ item['item_Name'] }}</td>
+            <td style="padding:12px;">{{ item['item_Brand'] or 'N/A' }}</td>
+            <td style="padding:12px;">
+              <span style="padding: 4px 8px; border-radius: 4px; background-color: #e3f2fd; color: #0d47a1;">
+                {{ item['item_Condition'] or 'N/A' }}
+              </span>
+            </td>
+            <td style="padding:12px;">{{ item['item_Date'] or 'N/A' }}</td>
+            <td style="padding:12px; max-width: 200px;">
+              {% if item['item_Description'] %}
+                {{ item['item_Description'] }}
+              {% else %}
+                <span style="color: #999;">No description</span>
+              {% endif %}
+            </td>
+            <td style="padding:12px;">
+              {% if item['location'] %}
+                📍 {{ item['location'] }}
+              {% else %}
+                <span style="color: #999;">N/A</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 15px; background-color: #e8f5e8; border-radius: 5px;">
+      <p style="margin: 0; color: #2e7d32;">
+        <strong>Found {{ items|length }} item(s)</strong> matching your search.
+        {% if not session.user_id %}
+          <a href="{{ url_for('login') }}" style="color: #0d47a1; font-weight: bold;">Login</a> to contact traders or request trades.
+        {% endif %}
+      </p>
+    </div>
+    
+    {% else %}
+    <div style="text-align: center; padding: 40px;">
+      <h3 style="color:#666; margin-bottom:15px;">No items found</h3>
+      <p style="color:#999; margin-bottom:20px;">No items match your search for "{{ query }}"</p>
+      <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+        <a href="{{ url_for('index') }}" class="btn-primary">Back to Home</a>
+        {% if session.user_id %}
+          <a href="{{ url_for('other_traders_items') }}" class="btn-primary" style="background-color: #546e7a;">Browse All Items</a>
+        {% else %}
+          <a href="{{ url_for('register') }}" class="btn-primary" style="background-color: #546e7a;">Join to See More</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+    
+    {% if items %}
+    <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="{{ url_for('index') }}" class="btn-primary">New Search</a>
+      {% if session.user_id %}
+        <a href="{{ url_for('dashboard') }}" class="btn-primary" style="background-color: #546e7a;">My Dashboard</a>
+        <a href="{{ url_for('other_traders_items') }}" class="btn-primary" style="background-color: #795548;">Browse All Items</a>
+      {% else %}
+        <a href="{{ url_for('register') }}" class="btn-primary" style="background-color: #795548;">Join BarterZone</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}
