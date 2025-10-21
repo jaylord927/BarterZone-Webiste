@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-section">
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 1000px; width:100%; padding:20px; border-radius:10px;">
+    
+    <h2 style="color:#0d47a1; margin-bottom:20px;">Request Trade</h2>
+    
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <!-- Other Traders' Items -->
+      <div style="flex: 1; min-width: 300px;">
+        <h3 style="color:#0d47a1; margin-bottom:15px;">Other Traders' Items</h3>
+        {% if other_items %}
+        <div style="max-height: 400px; overflow-y: auto;">
+          {% for item in other_items %}
+          <div class="item-card" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
+            <h4 style="margin: 0 0 10px 0; color:#0d47a1;">{{ item['item_Name'] }}</h4>
+            <p style="margin: 5px 0;"><strong>Brand:</strong> {{ item['item_Brand'] }}</p>
+            <p style="margin: 5px 0;"><strong>Condition:</strong> {{ item['item_Condition'] }}</p>
+            <p style="margin: 5px 0;"><strong>Owner:</strong> {{ item['full_name'] or item['username'] }}</p>
+            <p style="margin: 5px 0;"><strong>Location:</strong> {{ item['location'] or 'N/A' }}</p>
+            <button onclick="selectTargetItem({{ item['items_id'] }}, '{{ item['item_Name'] }}')" 
+                    class="btn-primary" style="background-color: #546e7a; margin-top:10px;">
+              Select for Trade
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+          <p>No items available from other traders.</p>
+        {% endif %}
+      </div>
+
+      <!-- My Items -->
+      <div style="flex: 1; min-width: 300px;">
+        <h3 style="color:#0d47a1; margin-bottom:15px;">My Items to Offer</h3>
+        {% if my_items %}
+        <div style="max-height: 400px; overflow-y: auto;">
+          {% for item in my_items %}
+          <div class="item-card" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
+            <h4 style="margin: 0 0 10px 0; color:#0d47a1;">{{ item['item_Name'] }}</h4>
+            <p style="margin: 5px 0;"><strong>Brand:</strong> {{ item['item_Brand'] }}</p>
+            <p style="margin: 5px 0;"><strong>Condition:</strong> {{ item['item_Condition'] }}</p>
+            <button onclick="selectOfferItem({{ item['items_id'] }}, '{{ item['item_Name'] }}')" 
+                    class="btn-primary" style="margin-top:10px;">
+              Offer This Item
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+          <p>You have no items to offer. <a href="{{ url_for('add_item') }}">Add an item first</a>.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Trade Form -->
+    <div id="tradeForm" style="margin-top: 30px; padding: 20px; border: 2px solid #0d47a1; border-radius: 10px; display: none;">
+      <h3 style="color:#0d47a1; margin-bottom:15px;">Trade Request</h3>
+      <form method="POST" action="{{ url_for('request_trade') }}">
+        <input type="hidden" name="target_item_id" id="target_item_id">
+        <input type="hidden" name="offer_item_id" id="offer_item_id">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div style="text-align: center;">
+            <strong>You Offer:</strong>
+            <p id="offer_item_name" style="color: #0d47a1; font-weight: bold;"></p>
+          </div>
+          <div style="font-size: 24px;">⇄</div>
+          <div style="text-align: center;">
+            <strong>You Receive:</strong>
+            <p id="target_item_name" style="color: #0d47a1; font-weight: bold;"></p>
+          </div>
+        </div>
+        
+        <button type="submit" class="btn-primary" style="width: 100%;">Send Trade Request</button>
+      </form>
+    </div>
+
+  </div>
+</section>
+
+<script>
+let selectedTargetItem = null;
+let selectedOfferItem = null;
+
+function selectTargetItem(itemId, itemName) {
+    selectedTargetItem = {id: itemId, name: itemName};
+    document.getElementById('target_item_id').value = itemId;
+    document.getElementById('target_item_name').textContent = itemName;
+    checkTradeReady();
+}
+
+function selectOfferItem(itemId, itemName) {
+    selectedOfferItem = {id: itemId, name: itemName};
+    document.getElementById('offer_item_id').value = itemId;
+    document.getElementById('offer_item_name').textContent = itemName;
+    checkTradeReady();
+}
+
+function checkTradeReady() {
+    if (selectedTargetItem && selectedOfferItem) {
+        document.getElementById('tradeForm').style.display = 'block';
+    }
+}
+</script>
+
+<style>
+.item-card:hover {
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+</style>
+{% endblock %}

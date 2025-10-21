@@ -11,9 +11,14 @@
   <div class="navbar">
     <div class="logo">BarterZone</div>
     <ul class="nav-links">
-      <li><a href="{{ url_for('homepage') }}">Home</a></li>
-      <li><a href="{{ url_for('login') }}">Login</a></li>
-      <li><a href="{{ url_for('register') }}">Register</a></li>
+      <li><a href="{{ url_for('index') }}">Home</a></li>
+      {% if session.user_id %}
+        <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('logout') }}">Logout ({{ session.username }})</a></li>
+      {% else %}
+        <li><a href="{{ url_for('login') }}">Login</a></li>
+        <li><a href="{{ url_for('register') }}">Register</a></li>
+      {% endif %}
     </ul>
   </div>
 
@@ -26,6 +31,8 @@
           <input type="text" name="username" placeholder="Username" required>
           <input type="email" name="email" placeholder="Email" required>
           <input type="password" name="password" placeholder="Password" required>
+          <input type="text" name="full_name" placeholder="Full Name" required>
+          <input type="text" name="contact" placeholder="Contact Number" required>
           <input type="text" name="birthdate" placeholder="Birthdate (YYYY-MM-DD)">
           <input type="text" name="location" placeholder="Location">
           <button type="submit" class="btn-primary">Register</button>

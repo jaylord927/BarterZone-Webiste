@@ -36,7 +36,10 @@
         <p>No items added yet.</p>
       {% endif %}
 
-      <a href="{{ url_for('add_item') }}" class="btn-primary" style="margin-top:20px; display:inline-block;">+ Add New Item</a>
+      <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="{{ url_for('add_item') }}" class="btn-primary">+ Add New Item</a>
+        <a href="{{ url_for('other_traders_items') }}" class="btn-primary" style="background-color:#546e7a;">View Other Traders' Items</a>
+      </div>
 
     {% elif mode == 'add' %}
       <h2 style="color:#0d47a1; margin-bottom: 20px;">Add New Item</h2>
@@ -86,6 +89,50 @@
       {% else %}
         <p>No matching items found.</p>
       {% endif %}
+      <a href="{{ url_for('dashboard') }}" class="btn-primary" style="margin-top:20px;">Back to My Items</a>
+
+    {% elif mode == 'other_traders' %}
+      <h2 style="color:#0d47a1; margin-bottom:20px;">Other Traders' Items</h2>
+      <p style="margin-bottom:20px; color:#666;">You are logged in as: <strong>{{ session.username }}</strong></p>
+
+      {% if items %}
+      <table style="width:100%; border-collapse:collapse; text-align:left;">
+        <thead>
+          <tr style="background-color:#0d47a1; color:white;">
+            <th style="padding:10px;">Item Name</th>
+            <th style="padding:10px;">Brand</th>
+            <th style="padding:10px;">Condition</th>
+            <th style="padding:10px;">Date</th>
+            <th style="padding:10px;">Trader</th>
+            <th style="padding:10px;">Location</th>
+            <th style="padding:10px;">Contact</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr style="border-bottom:1px solid #ddd;">
+            <td style="padding:10px;">{{ item['item_Name'] }}</td>
+            <td style="padding:10px;">{{ item['item_Brand'] }}</td>
+            <td style="padding:10px;">{{ item['item_Condition'] }}</td>
+            <td style="padding:10px;">{{ item['item_Date'] }}</td>
+            <td style="padding:10px;">{{ item['full_name'] or item['username'] }}</td>
+            <td style="padding:10px;">{{ item['location'] or 'N/A' }}</td>
+            <td style="padding:10px;">{{ item['contact'] or 'N/A' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div style="margin-top:20px; padding:15px; background-color:#e8f5e8; border-radius:5px;">
+        <p style="margin:0; color:#2e7d32;">
+          <strong>Tip:</strong> You can use the "Request Trade" feature (coming soon) to make an offer on one of these items.
+        </p>
+      </div>
+
+      {% else %}
+        <p>No items found from other traders at the moment.</p>
+      {% endif %}
+
       <a href="{{ url_for('dashboard') }}" class="btn-primary" style="margin-top:20px;">Back to My Items</a>
 
     {% endif %}

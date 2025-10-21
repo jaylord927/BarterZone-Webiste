@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-section">
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 1200px; width:100%; padding:20px; border-radius:10px;">
+    
+    <h2 style="color:#0d47a1; margin-bottom:20px;">Trade History</h2>
+    
+    {% if history %}
+    <div style="overflow-x: auto;">
+      <table style="width:100%; border-collapse:collapse; text-align:left;">
+        <thead>
+          <tr style="background-color:#0d47a1; color:white;">
+            <th style="padding:10px;">Offered By</th>
+            <th style="padding:10px;">Traded With</th>
+            <th style="padding:10px;">Offered Item</th>
+            <th style="padding:10px;">Target Item</th>
+            <th style="padding:10px;">Status</th>
+            <th style="padding:10px;">Date Completed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for trade in history %}
+          <tr style="border-bottom:1px solid #ddd;">
+            <td style="padding:10px;">{{ trade['offer_username'] }}</td>
+            <td style="padding:10px;">{{ trade['target_username'] }}</td>
+            <td style="padding:10px;">{{ trade['offer_item_name'] or '[Deleted Item]' }}</td>
+            <td style="padding:10px;">{{ trade['target_item_name'] or '[Deleted Item]' }}</td>
+            <td style="padding:10px;">
+              <span style="padding: 4px 8px; border-radius: 4px; background-color: #e8f5e8; color: #2e7d32;">
+                {{ trade['trade_status'] }}
+              </span>
+            </td>
+            <td style="padding:10px;">{{ trade['trade_date_completed'] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p>No trade history found.</p>
+    {% endif %}
+    
+    <div style="margin-top:20px;">
+      <a href="{{ url_for('view_trade_requests') }}" class="btn-primary">Back to Trade Requests</a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

@@ -213,3 +213,200 @@ footer {
   text-decoration: none;
   font-weight: bold;
 }
+
+/* ===== Form Fields ===== */
+.form-field {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 10px;
+    outline: none;
+    font-size: 14px;
+}
+
+/* ===== Action Buttons ===== */
+.btn-primary {
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: opacity 0.3s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary:hover {
+    background-color: #ffa733;
+}
+
+.btn-edit {
+    background-color: #4CAF50;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    margin-right: 5px;
+}
+
+.btn-delete {
+    background-color: #f44336;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+}
+
+/* Add these to your style.css if not already present */
+.btn-primary {
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: opacity 0.3s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary:hover {
+    background-color: #ffa733;
+    opacity: 0.9;
+}
+
+.btn-edit {
+    background-color: #4CAF50;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    margin-right: 5px;
+}
+
+.btn-delete {
+    background-color: #f44336;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+}
+
+.form-field {
+    width: 100%;
+    max-width: 400px;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    outline: none;
+    font-size: 14px;
+}
+
+/* ===== Trader Options ===== */
+.trader-options {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.trader-options .btn-primary {
+    background-color: #0d47a1;
+}
+
+.trader-options .btn-primary:hover {
+    background-color: #1565c0;
+}
+
+/* ===== Info Box ===== */
+.info-box {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e8f5e8;
+    border-radius: 5px;
+    border-left: 4px solid #2e7d32;
+}
+
+.info-box p {
+    margin: 0;
+    color: #2e7d32;
+}
+
+/* ===== Messaging Styles ===== */
+.trader-card, .conversation-card {
+    transition: all 0.3s ease;
+}
+
+.trader-card:hover, .conversation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Chat bubble styles */
+.chat-bubble {
+    max-width: 70%;
+    padding: 10px 15px;
+    border-radius: 18px;
+    margin-bottom: 10px;
+    word-wrap: break-word;
+}
+
+.chat-bubble.own {
+    background-color: #0d47a1;
+    color: white;
+    margin-left: auto;
+}
+
+.chat-bubble.other {
+    background-color: #e0e0e0;
+    color: #333;
+    margin-right: auto;
+}
+
+/* ===== Profile Styles ===== */
+.profile-section {
+    background: rgba(255,255,255,0.95);
+    border-radius: 10px;
+    padding: 30px;
+    margin: 20px auto;
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.profile-form input,
+.profile-form textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.profile-form input:focus,
+.profile-form textarea:focus {
+    border-color: #0d47a1;
+    outline: none;
+    box-shadow: 0 0 5px rgba(13, 71, 161, 0.3);
+}
+
+.profile-form label {
+    font-weight: bold;
+    color: #0d47a1;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.password-section {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #0d47a1;
+}

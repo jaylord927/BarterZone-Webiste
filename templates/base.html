@@ -14,6 +14,14 @@
             <li><a href="{{ url_for('index') }}">Home</a></li>
             {% if session.user_id %}
                 <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('other_traders_items') }}">Browse Items</a></li>
+                <li><a href="{{ url_for('request_trade') }}">Request Trade</a></li>
+                <li><a href="{{ url_for('view_trade_requests') }}">Trade Requests</a></li>
+                <li><a href="{{ url_for('trade_history') }}">Trade History</a></li>
+                <li><a href="{{ url_for('send_message') }}">Send Message</a></li>
+                <li><a href="{{ url_for('view_messages') }}">Messages</a></li>
+                <!-- PROFILE LINK -->
+                <li><a href="{{ url_for('profile') }}">Profile</a></li>
                 <li><a href="{{ url_for('logout') }}">Logout ({{ session.username }})</a></li>
             {% else %}
                 <li><a href="{{ url_for('login') }}">Login</a></li>
@@ -22,26 +30,19 @@
         </ul>
     </div>
 
-    <!-- ===== Hero Section ===== -->
-    <div class="hero-section">
-        <div class="overlay">
-            <h1>Find What You Need, Offer What You Don't</h1>
-
-            <form class="search-box" action="{{ url_for('search_items') }}" method="get">
-                <input type="text" name="q" placeholder="Search items...">
-                <button type="submit" class="search-btn">Search</button>
-            </form>
-
-            <div class="action-buttons">
-                <button class="want">I Want</button>
-                <button class="give">I Give</button><br>
-                {% if not session.user_id %}
-                    <button class="register" onclick="window.location.href='{{ url_for('register') }}'">Register</button>
-                    <button class="login" onclick="window.location.href='{{ url_for('login') }}'">Login</button>
-                {% endif %}
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div style="background: #ff9800; color: white; padding: 10px; text-align: center;">
+                {% for message in messages %}
+                    {{ message }}
+                {% endfor %}
             </div>
-        </div>
-    </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    {% block content %}{% endblock %}
 
     <!-- ===== Footer ===== -->
     <footer>

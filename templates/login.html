@@ -11,9 +11,14 @@
   <div class="navbar">
     <div class="logo">BarterZone</div>
     <ul class="nav-links">
-      <li><a href="{{ url_for('homepage') }}">Home</a></li>
-      <li><a href="{{ url_for('login') }}">Login</a></li>
-      <li><a href="{{ url_for('register') }}">Register</a></li>
+      <li><a href="{{ url_for('index') }}">Home</a></li>
+      {% if session.user_id %}
+        <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('logout') }}">Logout ({{ session.username }})</a></li>
+      {% else %}
+        <li><a href="{{ url_for('login') }}">Login</a></li>
+        <li><a href="{{ url_for('register') }}">Register</a></li>
+      {% endif %}
     </ul>
   </div>
 
@@ -28,7 +33,7 @@
           <button type="submit" class="btn-primary">Login</button>
         </form>
         <p class="alt-link">
-          Don’t have an account?
+          Don't have an account?
           <a href="{{ url_for('register') }}">Register here</a>
         </p>
       </div>

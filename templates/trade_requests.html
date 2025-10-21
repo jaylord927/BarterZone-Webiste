@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-section">
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 1200px; width:100%; padding:20px; border-radius:10px;">
+    
+    <h2 style="color:#0d47a1; margin-bottom:20px;">Trade Requests</h2>
+    
+    {% if trades %}
+    <div style="overflow-x: auto;">
+      <table style="width:100%; border-collapse:collapse; text-align:left;">
+        <thead>
+          <tr style="background-color:#0d47a1; color:white;">
+            <th style="padding:10px;">Type</th>
+            <th style="padding:10px;">From</th>
+            <th style="padding:10px;">Their Item</th>
+            <th style="padding:10px;">Your Item</th>
+            <th style="padding:10px;">Status</th>
+            <th style="padding:10px;">Date</th>
+            <th style="padding:10px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for trade in trades %}
+          <tr style="border-bottom:1px solid #ddd;">
+            <td style="padding:10px;">
+              <span style="padding: 4px 8px; border-radius: 4px; 
+                {% if trade['request_type'] == 'Incoming Request' %}background-color: #e3f2fd; color: #0d47a1;{% else %}background-color: #e8f5e8; color: #2e7d32;{% endif %}">
+                {{ trade['request_type'] }}
+              </span>
+            </td>
+            <td style="padding:10px;">{{ trade['offer_full_name'] or trade['offer_username'] }}</td>
+            <td style="padding:10px;">{{ trade['offer_item_name'] }}</td>
+            <td style="padding:10px;">{{ trade['target_item_name'] }}</td>
+            <td style="padding:10px;">
+              <span style="padding: 4px 8px; border-radius: 4px; 
+                {% if trade['trade_status'] == 'pending' %}background-color: #fff3e0; color: #ef6c00;
+                {% elif trade['trade_status'] == 'accepted' %}background-color: #e8f5e8; color: #2e7d32;
+                {% else %}background-color: #ffebee; color: #c62828;{% endif %}">
+                {{ trade['trade_status'] }}
+              </span>
+            </td>
+            <td style="padding:10px;">{{ trade['trade_date'] }}</td>
+            <td style="padding:10px;">
+              {% if trade['request_type'] == 'Incoming Request' and trade['trade_status'] == 'pending' %}
+              <form method="POST" action="{{ url_for('respond_trade', trade_id=trade['trade_id']) }}" style="display: inline;">
+                <button type="submit" name="action" value="accept" class="btn-edit" style="margin-right:5px;">Accept</button>
+                <button type="submit" name="action" value="decline" class="btn-delete">Decline</button>
+              </form>
+              {% elif trade['request_type'] == 'Your Request' and trade['trade_status'] == 'pending' %}
+              <form method="POST" action="{{ url_for('respond_trade', trade_id=trade['trade_id']) }}" style="display: inline;">
+                <button type="submit" name="action" value="cancel" class="btn-delete">Cancel</button>
+              </form>
+              {% else %}
+                <span style="color: #666;">No actions</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p>No trade requests found.</p>
+    {% endif %}
+    
+    <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="{{ url_for('other_traders_items') }}" class="btn-primary" style="background-color:#546e7a;">View Other Traders' Items</a>
+      <a href="{{ url_for('request_trade') }}" class="btn-primary">Request New Trade</a>
+      <a href="{{ url_for('trade_history') }}" class="btn-primary" style="background-color:#795548;">View Trade History</a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

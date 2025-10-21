@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-section">
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 800px; width:100%; padding:20px; border-radius:10px;">
+    
+    <h2 style="color:#0d47a1; margin-bottom:20px;">Send Message to Another Trader</h2>
+    
+    {% if traders %}
+    <div style="margin-bottom: 30px;">
+      <h3 style="color:#546e7a; margin-bottom:15px;">Available Traders</h3>
+      <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; padding: 10px;">
+        {% for trader in traders %}
+        <div class="trader-card" style="border: 1px solid #eee; padding: 15px; margin-bottom: 10px; border-radius: 5px; cursor: pointer;"
+             onclick="selectTrader({{ trader['id'] }}, '{{ trader['full_name'] or trader['username'] }}')">
+          <h4 style="margin: 0 0 5px 0; color:#0d47a1;">{{ trader['full_name'] or trader['username'] }}</h4>
+          <p style="margin: 2px 0; color:#666;">Username: {{ trader['username'] }}</p>
+          {% if trader['location'] %}
+          <p style="margin: 2px 0; color:#666;">Location: {{ trader['location'] }}</p>
+          {% endif %}
+          {% if trader['contact'] %}
+          <p style="margin: 2px 0; color:#666;">Contact: {{ trader['contact'] }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div id="messageForm" style="display: none;">
+      <h3 style="color:#546e7a; margin-bottom:15px;">Send Message to <span id="selectedTraderName"></span></h3>
+      <form method="POST" action="{{ url_for('send_message') }}">
+        <input type="hidden" name="receiver_id" id="receiver_id">
+        
+        <div style="margin-bottom: 15px;">
+          <textarea name="message_text" id="message_text" 
+                    placeholder="Type your message here..." 
+                    style="width: 100%; height: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"
+                    required></textarea>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+          <button type="submit" class="btn-primary">Send Message</button>
+          <button type="button" onclick="cancelMessage()" class="btn-primary" style="background-color: #546e7a;">Cancel</button>
+        </div>
+      </form>
+    </div>
+    
+    {% else %}
+      <p>No other traders available to message at the moment.</p>
+    {% endif %}
+    
+    <div style="margin-top: 20px;">
+      <a href="{{ url_for('view_messages') }}" class="btn-primary" style="background-color: #546e7a;">View My Messages</a>
+    </div>
+
+  </div>
+</section>
+
+<script>
+function selectTrader(traderId, traderName) {
+    document.getElementById('receiver_id').value = traderId;
+    document.getElementById('selectedTraderName').textContent = traderName;
+    document.getElementById('messageForm').style.display = 'block';
+    
+    // Scroll to message form
+    document.getElementById('messageForm').scrollIntoView({ behavior: 'smooth' });
+    
+    // Focus on message textarea
+    document.getElementById('message_text').focus();
+}
+
+function cancelMessage() {
+    document.getElementById('messageForm').style.display = 'none';
+    document.getElementById('receiver_id').value = '';
+    document.getElementById('message_text').value = '';
+}
+</script>
+
+<style>
+.trader-card:hover {
+    background-color: #f5f5f5;
+    border-color: #0d47a1 !important;
+}
+</style>
+{% endblock %}
