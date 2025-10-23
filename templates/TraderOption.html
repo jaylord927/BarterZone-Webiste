@@ -49,6 +49,12 @@
         <input type="text" name="item_Condition" placeholder="Condition" class="form-field">
         <input type="text" name="item_Date" placeholder="Date (YYYY-MM-DD)" class="form-field">
         <textarea name="item_Description" placeholder="Description" class="form-field" style="height:100px;"></textarea>
+        <!-- Add Image URL Field -->
+        <div style="margin-bottom: 15px; width: 100%;">
+          <label style="display: block; margin-bottom: 5px; font-weight: bold; color:#0d47a1;">Item Image URL</label>
+          <input type="url" name="item_image" placeholder="https://example.com/image.jpg" class="form-field">
+          <small style="color: #666;">Paste a direct image URL (optional)</small>
+        </div>
         <button type="submit" class="btn-primary">Add Item</button>
       </form>
 
@@ -60,6 +66,12 @@
         <input type="text" name="item_Condition" value="{{ item[4] }}" class="form-field">
         <input type="text" name="item_Date" value="{{ item[5] }}" class="form-field">
         <textarea name="item_Description" class="form-field" style="height:100px;">{{ item[6] }}</textarea>
+        <!-- Add Image URL Field -->
+        <div style="margin-bottom: 15px; width: 100%;">
+          <label style="display: block; margin-bottom: 5px; font-weight: bold; color:#0d47a1;">Item Image URL</label>
+          <input type="url" name="item_image" value="{{ item[7] if item|length > 7 else '' }}" placeholder="https://example.com/image.jpg" class="form-field">
+          <small style="color: #666;">Paste a direct image URL (optional)</small>
+        </div>
         <button type="submit" class="btn-primary">Update Item</button>
       </form>
 
@@ -112,79 +124,317 @@
       </div>
 
     {% elif mode == 'other_traders' %}
-      <h2 style="color:#0d47a1; margin-bottom:20px;">All Items</h2>
-      <p style="margin-bottom:20px; color:#666;">You are logged in as: <strong>{{ session.username }}</strong></p>
+<div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+    <h2 style="color:#0d47a1; margin-bottom:10px;">All Items</h2>
+    <p style="color:#666; margin-bottom:30px;">You are logged in as: <strong>{{ session.username }}</strong></p>
 
-      {% if items %}
-      <div style="overflow-x: auto;">
-        <table style="width:100%; border-collapse:collapse; text-align:left;">
-          <thead>
-            <tr style="background-color:#0d47a1; color:white;">
-              <th style="padding:12px;">Item Name</th>
-              <th style="padding:12px;">Brand</th>
-              <th style="padding:12px;">Condition</th>
-              <th style="padding:12px;">Date Bought</th>
-              <th style="padding:12px;">Description</th>
-              <th style="padding:12px;">Trader</th>
-              <th style="padding:12px;">Location</th>
-              <th style="padding:12px;">Contact</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in items %}
-            <tr style="border-bottom:1px solid #ddd;">
-              <td style="padding:12px; font-weight:bold;">{{ item['item_Name'] }}</td>
-              <td style="padding:12px;">{{ item['item_Brand'] or 'N/A' }}</td>
-              <td style="padding:12px;">{{ item['item_Condition'] or 'N/A' }}</td>
-              <td style="padding:12px;">{{ item['item_Date'] or 'N/A' }}</td>
-              <td style="padding:12px; max-width: 200px;">
-                {% if item['item_Description'] %}
-                  {{ item['item_Description'] }}
-                {% else %}
-                  <span style="color: #999;">No description</span>
-                {% endif %}
-              </td>
-              <td style="padding:12px; font-weight:bold; color:#0d47a1;">{{ item['full_name'] or item['username'] }}</td>
-              <td style="padding:12px;">
-                {% if item['location'] %}
-                  📍 {{ item['location'] }}
-                {% else %}
-                  <span style="color: #999;">N/A</span>
-                {% endif %}
-              </td>
-              <td style="padding:12px;">
-                {% if item['contact'] %}
-                  📞 {{ item['contact'] }}
-                {% else %}
-                  <span style="color: #999;">N/A</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      <div style="margin-top:20px; padding:15px; background-color:#e8f5e8; border-radius:5px;">
-        <p style="margin:0; color:#2e7d32;">
-          <strong>Ready to trade?</strong> Use the "Request Trade" feature to make an offer on any of these items.
-        </p>
-      </div>
-
-      {% else %}
-        <div style="text-align: center; padding: 40px;">
-          <h3 style="color:#666; margin-bottom:15px;">No Items Available</h3>
-          <p style="color:#999; margin-bottom:20px;">No items found from other traders at the moment.</p>
-          <a href="{{ url_for('dashboard') }}" class="btn-primary">Back to My Items</a>
+    {% if items %}
+    <!-- Search and Filter Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+        <div style="flex: 1; min-width: 300px;">
+            <input type="text" id="searchItems" placeholder="🔍 Search items..."
+                   style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 14px;">
         </div>
-      {% endif %}
+        <div style="display: flex; gap: 10px;">
+            <select id="sortBy" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="name">Name A-Z</option>
+            </select>
+        </div>
+    </div>
 
-      {% if items %}
-      <div style="margin-top:20px;">
-        <a href="{{ url_for('dashboard') }}" class="btn-primary">Back to My Items</a>
-        <a href="{{ url_for('request_trade') }}" class="btn-primary" style="background-color: #ff9800; margin-left:10px;">Request Trade</a>
-      </div>
-      {% endif %}
+    <!-- Items Grid -->
+    <div class="items-grid" id="itemsGrid">
+        {% for item in items %}
+        <div class="item-card" data-name="{{ item['item_Name']|lower }}" data-date="{{ item['item_Date'] }}">
+            <div class="item-image">
+                {% if item['item_image'] %}
+                <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}" onerror="this.src='https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image'">
+                {% else %}
+                <img src="https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image" alt="{{ item['item_Name'] }}">
+                {% endif %}
+                <div class="item-condition">{{ item['item_Condition'] or 'Good' }}</div>
+            </div>
+
+            <div class="item-details">
+                <h3 class="item-title">{{ item['item_Name'] }}</h3>
+                <p class="item-brand">{{ item['item_Brand'] or 'No Brand' }}</p>
+                <p class="item-description">{{ item['item_Description'] or 'No description available' }}</p>
+
+                <div class="item-meta">
+                    <span class="item-date">🕒 {{ item['item_Date'] or 'Unknown date' }}</span>
+                </div>
+
+                <div class="trader-info">
+                    <div class="trader-avatar">
+                        {{ (item['full_name'] or item['username'])|first|upper }}
+                    </div>
+                    <div class="trader-details">
+                        <strong>{{ item['full_name'] or item['username'] }}</strong>
+                        <span>📍 {{ item['location'] or 'Unknown location' }}</span>
+                    </div>
+                </div>
+
+                <div class="item-actions">
+                    <a href="{{ url_for('send_message') }}?receiver_id={{ item['user_id'] }}" class="btn-message">💬 Message</a>
+                    <a href="{{ url_for('request_trade') }}?target_item_id={{ item['items_id'] }}" class="btn-trade">🔄 Trade</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- No Results Message -->
+    <div id="noResults" style="display: none; text-align: center; padding: 40px;">
+        <h3 style="color:#666;">No items found</h3>
+        <p style="color:#999;">Try adjusting your search terms</p>
+    </div>
+
+    {% else %}
+    <div style="text-align: center; padding: 60px 20px;">
+        <div style="font-size: 64px; margin-bottom: 20px;">📦</div>
+        <h3 style="color:#666; margin-bottom:15px;">No Items Available</h3>
+        <p style="color:#999; margin-bottom:30px; max-width: 400px; margin-left: auto; margin-right: auto;">
+            No items found from other traders at the moment. Be the first to add an item!
+        </p>
+        <a href="{{ url_for('add_item') }}" class="btn-primary">+ Add Your First Item</a>
+    </div>
+    {% endif %}
+
+    {% if items %}
+    <div style="margin-top: 40px; text-align: center;">
+        <a href="{{ url_for('dashboard') }}" class="btn-primary" style="background-color: #546e7a;">Back to My Items</a>
+        <a href="{{ url_for('add_item') }}" class="btn-primary" style="margin-left: 10px;">+ Add New Item</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.item-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+}
+
+.item-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.item-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.item-card:hover .item-image img {
+    transform: scale(1.05);
+}
+
+.item-condition {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(13, 71, 161, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.item-details {
+    padding: 20px;
+}
+
+.item-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #0d47a1;
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+}
+
+.item-brand {
+    color: #666;
+    font-size: 14px;
+    margin: 0 0 10px 0;
+    font-weight: 500;
+}
+
+.item-description {
+    color: #777;
+    font-size: 13px;
+    line-height: 1.4;
+    margin: 0 0 15px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.item-meta {
+    margin-bottom: 15px;
+}
+
+.item-date {
+    font-size: 12px;
+    color: #999;
+}
+
+.trader-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.trader-avatar {
+    width: 35px;
+    height: 35px;
+    background: #0d47a1;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.trader-details {
+    flex: 1;
+}
+
+.trader-details strong {
+    display: block;
+    font-size: 14px;
+    color: #333;
+}
+
+.trader-details span {
+    font-size: 12px;
+    color: #666;
+}
+
+.item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-message, .btn-trade {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-message {
+    background: #f8f9fa;
+    color: #333;
+    border: 1px solid #e0e0e0;
+}
+
+.btn-trade {
+    background: #0d47a1;
+    color: white;
+    border: 1px solid #0d47a1;
+}
+
+.btn-message:hover {
+    background: #e9ecef;
+}
+
+.btn-trade:hover {
+    background: #0b3d91;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .items-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .item-details {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .items-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+// Search functionality
+document.getElementById('searchItems').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const items = document.querySelectorAll('.item-card');
+    let visibleCount = 0;
+
+    items.forEach(item => {
+        const itemName = item.getAttribute('data-name');
+        if (itemName.includes(searchTerm)) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+
+    document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+});
+
+// Sort functionality
+document.getElementById('sortBy').addEventListener('change', function(e) {
+    const sortBy = e.target.value;
+    const grid = document.getElementById('itemsGrid');
+    const items = Array.from(grid.querySelectorAll('.item-card'));
+
+    items.sort((a, b) => {
+        if (sortBy === 'name') {
+            return a.getAttribute('data-name').localeCompare(b.getAttribute('data-name'));
+        } else if (sortBy === 'newest') {
+            return new Date(b.getAttribute('data-date')) - new Date(a.getAttribute('data-date'));
+        } else if (sortBy === 'oldest') {
+            return new Date(a.getAttribute('data-date')) - new Date(b.getAttribute('data-date'));
+        }
+        return 0;
+    });
+
+    // Re-append sorted items
+    items.forEach(item => grid.appendChild(item));
+});
+</script>
 
     {% endif %}
   </div>

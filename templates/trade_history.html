@@ -57,14 +57,21 @@
             <td style="padding:12px;">
               {% if trade['trade_status'] == 'completed' %}
                 <span style="padding: 4px 8px; border-radius: 4px; background-color: #4CAF50; color: white; font-size: 12px;">
-                  Received
+                  Both Received
                 </span>
               {% else %}
+                {# Check if current user is offer trader #}
                 {% if trade['offer_user_id'] == user_id %}
                   {% if trade['offer_received'] %}
-                    <span style="padding: 4px 8px; border-radius: 4px; background-color: #4CAF50; color: white; font-size: 12px;">
-                      Received
-                    </span>
+                    {% if trade['target_received'] %}
+                      <span style="padding: 4px 8px; border-radius: 4px; background-color: #4CAF50; color: white; font-size: 12px;">
+                        Both Received
+                      </span>
+                    {% else %}
+                      <span style="padding: 4px 8px; border-radius: 4px; background-color: #ff9800; color: white; font-size: 12px;">
+                        Waiting for {{ trade['target_full_name'] or trade['target_username'] }} to receive
+                      </span>
+                    {% endif %}
                   {% else %}
                     <form method="POST" action="{{ url_for('mark_item_received', trade_id=trade['trade_id']) }}" style="display: inline;">
                       <button type="submit" class="btn-primary" style="padding: 4px 8px; font-size: 12px; background-color: #ff9800;">
@@ -72,11 +79,19 @@
                       </button>
                     </form>
                   {% endif %}
+
+                {# Check if current user is target trader #}
                 {% else %}
                   {% if trade['target_received'] %}
-                    <span style="padding: 4px 8px; border-radius: 4px; background-color: #4CAF50; color: white; font-size: 12px;">
-                      Received
-                    </span>
+                    {% if trade['offer_received'] %}
+                      <span style="padding: 4px 8px; border-radius: 4px; background-color: #4CAF50; color: white; font-size: 12px;">
+                        Both Received
+                      </span>
+                    {% else %}
+                      <span style="padding: 4px 8px; border-radius: 4px; background-color: #ff9800; color: white; font-size: 12px;">
+                        Waiting for {{ trade['offer_full_name'] or trade['offer_username'] }} to receive
+                      </span>
+                    {% endif %}
                   {% else %}
                     <form method="POST" action="{{ url_for('mark_item_received', trade_id=trade['trade_id']) }}" style="display: inline;">
                       <button type="submit" class="btn-primary" style="padding: 4px 8px; font-size: 12px; background-color: #ff9800;">

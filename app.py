@@ -69,28 +69,44 @@ def register():
         password = request.form['password']
         birthdate = request.form.get('birthdate')
         location = request.form.get('location')
-        full_name = request.form.get('full_name', '')  # Default to empty string
-        contact = request.form.get('contact', '')      # Default to empty string
+        full_name = request.form.get('full_name', '')
+        contact = request.form.get('contact', '')
 
         with sqlite3.connect(DB_NAME) as conn:
             try:
-                conn.execute("INSERT INTO users (username, email, password, birthdate, location, full_name, contact) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                           (username, email, password, birthdate, location, full_name, contact))
+                # Check if username or email already exists
+                existing_user = conn.execute(
+                    "SELECT id FROM users WHERE username = ? OR email = ?",
+                    (username, email)
+                ).fetchone()
+
+                if existing_user:
+                    flash('Username or email already exists! Please choose different ones.', 'error')
+                    return redirect(url_for('register'))
+
+                conn.execute(
+                    "INSERT INTO users (username, email, password, birthdate, location, full_name, contact) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (username, email, password, birthdate, location, full_name, contact))
                 flash('Registration successful! You can now login.', 'success')
                 return redirect(url_for('login'))
             except sqlite3.IntegrityError:
-                flash('Username already exists!', 'error')
+                flash('Username or email already exists!', 'error')
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """User login"""
+    """User login with username OR email"""
     if request.method == 'POST':
-        username = request.form['username']
+        username_or_email = request.form['username']
         password = request.form['password']
 
         with sqlite3.connect(DB_NAME) as conn:
-            user = conn.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password)).fetchone()
+            # Check if login is username OR email
+            user = conn.execute("""
+                SELECT * FROM users 
+                WHERE (username = ? OR email = ?) AND password = ?
+            """, (username_or_email, username_or_email, password)).fetchone()
+
             if user:
                 session['user_id'] = user[0]
                 session['username'] = user[1]
@@ -102,9 +118,8 @@ def login():
                 flash('Login successful!', 'success')
                 return redirect(url_for('dashboard'))
             else:
-                flash('Invalid username or password', 'error')
+                flash('Invalid username/email or password', 'error')
     return render_template('login.html')
-
 
 @app.route('/logout')
 def logout():
@@ -475,11 +490,13 @@ def mark_item_received(trade_id):
                 "UPDATE trades SET offer_received = 1 WHERE trade_id = ?",
                 (trade_id,)
             )
+            flash('You marked your offered item as received!', 'success')
         else:  # target_user_id
             conn.execute(
                 "UPDATE trades SET target_received = 1 WHERE trade_id = ?",
                 (trade_id,)
             )
+            flash('You marked the received item as received!', 'success')
 
         # Check if both users have received their items
         updated_trade = conn.execute(
@@ -493,12 +510,9 @@ def mark_item_received(trade_id):
                 "UPDATE trades SET trade_status = 'completed' WHERE trade_id = ?",
                 (trade_id,)
             )
-
-        flash('Item marked as received!', 'success')
+            flash('Trade completed! Both traders have received their items.', 'success')
 
     return redirect(url_for('trade_history'))
-
-# Add these messaging routes after your existing routes
 
 @app.route('/send_message', methods=['GET', 'POST'])
 def send_message():

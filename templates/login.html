@@ -28,7 +28,8 @@
       <div class="auth-box">
         <h2>Welcome Back!</h2>
         <form method="POST" action="{{ url_for('login') }}">
-          <input type="text" name="username" placeholder="Username" required>
+          <input type="text" name="username" placeholder="Username or Email" required>
+          <p class="login-hint">You can login with your username or email</p>
           <input type="password" name="password" placeholder="Password" required>
           <button type="submit" class="btn-primary">Login</button>
         </form>

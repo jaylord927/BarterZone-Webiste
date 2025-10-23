@@ -33,7 +33,14 @@
           <input type="password" name="password" placeholder="Password" required>
           <input type="text" name="full_name" placeholder="Full Name" required>
           <input type="text" name="contact" placeholder="Contact Number" required>
-          <input type="text" name="birthdate" placeholder="Birthdate (YYYY-MM-DD)">
+
+          <!-- Updated Birthdate field with date input -->
+          <label for="birthdate" style="display: block; text-align: left; color: white; margin-bottom: 5px; font-size: 14px;">
+            Birthdate
+          </label>
+          <input type="date" name="birthdate" id="birthdate"
+                 style="width: 100%; padding: 12px; margin: 5px 0 15px 0; border: none; border-radius: 10px; outline: none; font-size: 14px;">
+
           <input type="text" name="location" placeholder="Location">
           <button type="submit" class="btn-primary">Register</button>
         </form>
@@ -49,5 +56,15 @@
   <footer>
     <p>© 2025 BarterZone. All rights reserved.</p>
   </footer>
+
+  <script>
+    // Set maximum date to today (user can't select future dates)
+    document.getElementById('birthdate').max = new Date().toISOString().split('T')[0];
+
+    // Optional: Set a reasonable minimum date (e.g., 100 years ago)
+    const minDate = new Date();
+    minDate.setFullYear(minDate.getFullYear() - 100);
+    document.getElementById('birthdate').min = minDate.toISOString().split('T')[0];
+  </script>
 </body>
 </html>
