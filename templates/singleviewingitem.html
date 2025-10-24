@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-section">
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 800px; width:100%; padding:20px; border-radius:10px;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 style="color:#0d47a1; margin: 0;">Item Details</h2>
+      <button onclick="window.history.back()" class="btn-primary" style="background: #546e7a; border: none; border-radius: 8px; color: white; padding: 10px 20px; cursor: pointer; font-weight: bold;">
+        ← Back
+      </button>
+    </div>
+
+    {% if item %}
+    <div class="item-detail-card">
+      <!-- Item Image -->
+      <div class="item-image-section">
+        {% if item['item_image'] %}
+        <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}" 
+             onerror="this.src='https://via.placeholder.com/400x300/0d47a1/ffffff?text=No+Image'">
+        {% else %}
+        <img src="https://via.placeholder.com/400x300/0d47a1/ffffff?text=No+Image" alt="{{ item['item_Name'] }}">
+        {% endif %}
+        <div class="item-condition-badge">{{ item['item_Condition'] or 'Good' }}</div>
+      </div>
+
+      <!-- Item Details -->
+      <div class="item-info-section">
+        <!-- Owner Information -->
+        <div class="owner-section">
+          <div class="owner-avatar">
+            {{ (item['full_name'] or item['username'])|first|upper }}
+          </div>
+          <div class="owner-details">
+            <div class="owner-name">{{ item['full_name'] or item['username'] }}</div>
+            {% if item['location'] %}
+            <div class="owner-location">📍 {{ item['location'] }}</div>
+            {% endif %}
+            {% if item['contact'] %}
+            <div class="owner-contact">📞 {{ item['contact'] }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Item Information -->
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">Item Name:</span>
+            <span class="detail-value">{{ item['item_Name'] }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Brand:</span>
+            <span class="detail-value">{{ item['item_Brand'] or 'Not specified' }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Condition:</span>
+            <span class="detail-value condition-badge">{{ item['item_Condition'] or 'Good' }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Date Bought:</span>
+            <span class="detail-value">{{ item['item_DateBought'] or 'Not specified' }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">When was it offered:</span>
+            <span class="detail-value">{{ item['item_DateOffered'] or 'Not specified' }}</span>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="description-section">
+          <span class="detail-label">Description:</span>
+          <p class="description-text">{{ item['item_Description'] or 'No description available' }}</p>
+        </div>
+
+        <!-- Action Buttons -->
+        {% if session.user_id and session.user_id != item['user_id'] %}
+        <div class="action-buttons">
+          <a href="{{ url_for('send_message') }}?receiver_id={{ item['user_id'] }}" class="btn-message">
+            💬 Message Owner
+          </a>
+          <a href="{{ url_for('request_trade') }}?target_item_id={{ item['items_id'] }}" class="btn-trade">
+            🔄 Request Trade
+          </a>
+        </div>
+        {% elif session.user_id and session.user_id == item['user_id'] %}
+        <div class="action-buttons">
+          <p style="color: #666; text-align: center; font-style: italic;">This is your own item</p>
+        </div>
+        {% else %}
+        <div class="action-buttons">
+          <a href="{{ url_for('login') }}" class="btn-primary" style="background: #0d47a1;">Login to Trade</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% else %}
+    <div style="text-align: center; padding: 60px 20px;">
+      <div style="font-size: 64px; margin-bottom: 20px;">❓</div>
+      <h3 style="color:#666; margin-bottom:15px;">Item Not Found</h3>
+      <p style="color:#999; margin-bottom:30px;">The requested item could not be found.</p>
+      <a href="{{ url_for('other_traders_items') }}" class="btn-primary" style="background: #0d47a1;">Browse Items</a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+
+<style>
+.item-detail-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
+}
+
+.item-image-section {
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.item-image-section img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.item-condition-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(13, 71, 161, 0.95);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.item-info-section {
+  padding: 30px;
+}
+
+/* Owner Section */
+.owner-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.owner-avatar {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(13, 71, 161, 0.3);
+}
+
+.owner-details {
+  flex: 1;
+}
+
+.owner-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #0d47a1;
+  margin-bottom: 5px;
+}
+
+.owner-location, .owner-contact {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 3px;
+}
+
+/* Detail Grid */
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.detail-label {
+  font-size: 14px;
+  color: #0d47a1;
+  font-weight: 600;
+  min-width: 160px;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  text-align: right;
+  flex: 1;
+  margin-left: 15px;
+}
+
+.condition-badge {
+  background: #e8f5e8;
+  color: #2e7d32;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Description Section */
+.description-section {
+  margin-bottom: 25px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border-left: 4px solid #0d47a1;
+}
+
+.description-text {
+  color: #555;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 10px 0 0 0;
+  white-space: pre-line;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.btn-message, .btn-trade {
+  flex: 1;
+  padding: 15px;
+  text-align: center;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-message {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #333;
+  border: 2px solid #e0e0e0;
+}
+
+.btn-trade {
+  background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+  color: white;
+  border: 2px solid #0d47a1;
+}
+
+.btn-message:hover {
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+  border-color: #0d47a1;
+  color: #0d47a1;
+  transform: translateY(-2px);
+}
+
+.btn-trade:hover {
+  background: linear-gradient(135deg, #0b3d91 0%, #1565c0 100%);
+  transform: translateY(-2px);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .item-image-section {
+    height: 300px;
+  }
+  
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .detail-value {
+    text-align: left;
+    margin-left: 0;
+    margin-top: 5px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .owner-section {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .owner-details {
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .item-info-section {
+    padding: 20px;
+  }
+  
+  .item-image-section {
+    height: 250px;
+  }
+}
+</style>
+{% endblock %}

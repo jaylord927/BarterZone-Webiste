@@ -142,7 +142,6 @@ def dashboard():
         items = conn.execute("SELECT * FROM items WHERE user_id=?", (user_id,)).fetchall()
     return render_template('TraderOption.html', items=items, mode='view')
 
-
 @app.route('/add_item', methods=['GET', 'POST'])
 def add_item():
     """Add new item"""
@@ -156,21 +155,22 @@ def add_item():
             request.form['item_Name'],
             request.form['item_Brand'],
             request.form['item_Condition'],
-            request.form['item_Date'],
-            request.form['item_Description']
+            request.form['item_DateBought'],  # Date bought (user input)
+            request.form['item_DateOffered'],  # When offered (auto-generated)
+            request.form['item_Description'],
+            request.form.get('item_image', '')  # Image URL
         )
 
         with sqlite3.connect(DB_NAME) as conn:
             conn.execute("""
-                INSERT INTO items (user_id, item_Name, item_Brand, item_Condition, item_Date, item_Description)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO items (user_id, item_Name, item_Brand, item_Condition, item_DateBought, item_DateOffered, item_Description, item_image)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, data)
 
         flash('Item added successfully!', 'success')
         return redirect(url_for('dashboard'))
 
     return render_template('TraderOption.html', mode='add')
-
 
 @app.route('/edit_item/<int:id>', methods=['GET', 'POST'])
 def edit_item(id):
@@ -191,8 +191,10 @@ def edit_item(id):
             request.form['item_Name'],
             request.form['item_Brand'],
             request.form['item_Condition'],
-            request.form['item_Date'],
+            request.form['item_DateBought'],  # Date bought
+            request.form['item_DateOffered'],  # When offered
             request.form['item_Description'],
+            request.form.get('item_image', ''),  # Image URL
             id,
             session['user_id']
         )
@@ -200,7 +202,7 @@ def edit_item(id):
         with sqlite3.connect(DB_NAME) as conn:
             conn.execute("""
                 UPDATE items
-                SET item_Name=?, item_Brand=?, item_Condition=?, item_Date=?, item_Description=?
+                SET item_Name=?, item_Brand=?, item_Condition=?, item_DateBought=?, item_DateOffered=?, item_Description=?, item_image=?
                 WHERE items_id=? AND user_id=?
             """, data)
 
@@ -208,7 +210,6 @@ def edit_item(id):
         return redirect(url_for('dashboard'))
 
     return render_template('TraderOption.html', item=item, mode='edit')
-
 
 @app.route('/delete_item/<int:id>')
 def delete_item(id):
@@ -253,7 +254,7 @@ def other_traders_items():
     with sqlite3.connect(DB_NAME) as conn:
         conn.row_factory = sqlite3.Row
         items = conn.execute("""
-            SELECT i.*, u.username, u.full_name, u.location, u.contact, u.email
+            SELECT i.*, u.username, u.full_name, u.location, u.contact
             FROM items i
             JOIN users u ON i.user_id = u.id
             WHERE i.user_id != ?
@@ -263,8 +264,29 @@ def other_traders_items():
     return render_template('TraderOption.html', items=items, mode='other_traders')
 
 
-# Add these new routes after your existing routes in app.py
+@app.route('/debug_items')
+def debug_items():
+    """Debug route to check items data"""
+    if 'user_id' not in session:
+        return "Please login first"
 
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        items = conn.execute("SELECT * FROM items").fetchall()
+
+        result = "<h1>Items Debug</h1>"
+        for item in items:
+            result += f"""
+            <div style="border:1px solid #ccc; margin:10px; padding:10px;">
+                <strong>ID:</strong> {item['items_id']}<br>
+                <strong>Name:</strong> {item['item_Name']}<br>
+                <strong>Image URL:</strong> {item['item_image'] or 'NO IMAGE'}<br>
+                <strong>Has Image:</strong> {bool(item['item_image'])}<br>
+            </div>
+            """
+        return result
+
+# Add these new routes after your existing routes in app.py
 @app.route('/request_trade', methods=['GET', 'POST'])
 def request_trade():
     """Request a trade with another trader"""
@@ -428,6 +450,23 @@ def respond_trade(trade_id):
 
     return redirect(url_for('view_trade_requests'))
 
+@app.route('/view_item/<int:item_id>')
+def view_item(item_id):
+    """View single item details"""
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        item = conn.execute("""
+            SELECT i.*, u.username, u.full_name, u.location, u.contact
+            FROM items i
+            JOIN users u ON i.user_id = u.id
+            WHERE i.items_id = ?
+        """, (item_id,)).fetchone()
+
+    if not item:
+        flash('Item not found.', 'error')
+        return redirect(url_for('other_traders_items'))
+
+    return render_template('singleviewingitem.html', item=item)
 
 # Update the trade_history route in app.py
 

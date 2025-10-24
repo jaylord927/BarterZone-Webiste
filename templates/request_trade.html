@@ -1,27 +1,73 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="hero-section">
-  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 1000px; width:100%; padding:20px; border-radius:10px;">
-    
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 1400px; width:100%; padding:20px; border-radius:10px;">
+
     <h2 style="color:#0d47a1; margin-bottom:20px;">Request Trade</h2>
-    
-    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+
+    <div style="display: flex; gap: 25px; flex-wrap: wrap;">
       <!-- Other Traders' Items -->
-      <div style="flex: 1; min-width: 300px;">
-        <h3 style="color:#0d47a1; margin-bottom:15px;">Other Traders' Items</h3>
+      <div style="flex: 1; min-width: 400px;">
+        <h3 style="color:#0d47a1; margin-bottom:15px;">Items Available for Trade</h3>
         {% if other_items %}
-        <div style="max-height: 400px; overflow-y: auto;">
+        <div style="max-height: 600px; overflow-y: auto; padding-right: 10px;">
           {% for item in other_items %}
-          <div class="item-card" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
-            <h4 style="margin: 0 0 10px 0; color:#0d47a1;">{{ item['item_Name'] }}</h4>
-            <p style="margin: 5px 0;"><strong>Brand:</strong> {{ item['item_Brand'] }}</p>
-            <p style="margin: 5px 0;"><strong>Condition:</strong> {{ item['item_Condition'] }}</p>
-            <p style="margin: 5px 0;"><strong>Owner:</strong> {{ item['full_name'] or item['username'] }}</p>
-            <p style="margin: 5px 0;"><strong>Location:</strong> {{ item['location'] or 'N/A' }}</p>
-            <button onclick="selectTargetItem({{ item['items_id'] }}, '{{ item['item_Name'] }}')" 
-                    class="btn-primary" style="background-color: #546e7a; margin-top:10px;">
-              Select for Trade
-            </button>
+          <div class="trade-item-card" id="target-{{ item['items_id'] }}">
+            <div class="item-image">
+              {% if item['item_image'] %}
+              <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}" onerror="this.src='https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image'">
+              {% else %}
+              <img src="https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image" alt="{{ item['item_Name'] }}">
+              {% endif %}
+              <div class="item-condition">{{ item['item_Condition'] or 'Good' }}</div>
+            </div>
+
+            <div class="item-details">
+              <!-- Owner Info -->
+              <div class="owner-info">
+                <div class="owner-avatar">
+                  {{ (item['full_name'] or item['username'])|first|upper }}
+                </div>
+                <div class="owner-details">
+                  <span class="owner-label">Owner:</span>
+                  <strong class="owner-name">{{ item['full_name'] or item['username'] }}</strong>
+                  {% if item['location'] %}
+                  <span class="owner-location">📍 {{ item['location'] }}</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <h4 class="item-title">{{ item['item_Name'] }}</h4>
+
+              <div class="item-specs">
+                <div class="spec-row">
+                  <span class="spec-label">Brand:</span>
+                  <span class="spec-value">{{ item['item_Brand'] or 'Not specified' }}</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-label">Condition:</span>
+                  <span class="spec-value condition-badge">{{ item['item_Condition'] or 'Good' }}</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-label">Date Bought:</span>
+                  <span class="spec-value">{{ item['item_Date'] or 'Not specified' }}</span>
+                </div>
+              </div>
+
+              <div class="description-section">
+                <p class="item-description">{{ item['item_Description'] or 'No description available' }}</p>
+              </div>
+
+              <div class="date-offered">
+                <span class="date-label">Listed:</span>
+                <span class="date-value">Recently</span>
+              </div>
+
+              <button onclick="selectTargetItem({{ item['items_id'] }}, '{{ item['item_Name']|replace("'", "&#39;") }}', '{{ item['item_image'] or '' }}')"
+                      class="select-btn" data-item-id="{{ item['items_id'] }}">
+                Select for Trade
+              </button>
+            </div>
           </div>
           {% endfor %}
         </div>
@@ -31,19 +77,48 @@
       </div>
 
       <!-- My Items -->
-      <div style="flex: 1; min-width: 300px;">
+      <div style="flex: 1; min-width: 400px;">
         <h3 style="color:#0d47a1; margin-bottom:15px;">My Items to Offer</h3>
         {% if my_items %}
-        <div style="max-height: 400px; overflow-y: auto;">
+        <div style="max-height: 600px; overflow-y: auto; padding-right: 10px;">
           {% for item in my_items %}
-          <div class="item-card" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
-            <h4 style="margin: 0 0 10px 0; color:#0d47a1;">{{ item['item_Name'] }}</h4>
-            <p style="margin: 5px 0;"><strong>Brand:</strong> {{ item['item_Brand'] }}</p>
-            <p style="margin: 5px 0;"><strong>Condition:</strong> {{ item['item_Condition'] }}</p>
-            <button onclick="selectOfferItem({{ item['items_id'] }}, '{{ item['item_Name'] }}')" 
-                    class="btn-primary" style="margin-top:10px;">
-              Offer This Item
-            </button>
+          <div class="trade-item-card" id="offer-{{ item['items_id'] }}">
+            <div class="item-image">
+              {% if item['item_image'] %}
+              <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}" onerror="this.src='https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image'">
+              {% else %}
+              <img src="https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image" alt="{{ item['item_Name'] }}">
+              {% endif %}
+              <div class="item-condition">{{ item['item_Condition'] or 'Good' }}</div>
+            </div>
+
+            <div class="item-details">
+              <h4 class="item-title">{{ item['item_Name'] }}</h4>
+
+              <div class="item-specs">
+                <div class="spec-row">
+                  <span class="spec-label">Brand:</span>
+                  <span class="spec-value">{{ item['item_Brand'] or 'Not specified' }}</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-label">Condition:</span>
+                  <span class="spec-value condition-badge">{{ item['item_Condition'] or 'Good' }}</span>
+                </div>
+                <div class="spec-row">
+                  <span class="spec-label">Date Bought:</span>
+                  <span class="spec-value">{{ item['item_Date'] or 'Not specified' }}</span>
+                </div>
+              </div>
+
+              <div class="description-section">
+                <p class="item-description">{{ item['item_Description'] or 'No description available' }}</p>
+              </div>
+
+              <button onclick="selectOfferItem({{ item['items_id'] }}, '{{ item['item_Name']|replace("'", "&#39;") }}', '{{ item['item_image'] or '' }}')"
+                      class="select-btn" data-item-id="{{ item['items_id'] }}">
+                Offer This Item
+              </button>
+            </div>
           </div>
           {% endfor %}
         </div>
@@ -54,60 +129,365 @@
     </div>
 
     <!-- Trade Form -->
-    <div id="tradeForm" style="margin-top: 30px; padding: 20px; border: 2px solid #0d47a1; border-radius: 10px; display: none;">
-      <h3 style="color:#0d47a1; margin-bottom:15px;">Trade Request</h3>
+    <div id="tradeForm" style="margin-top: 40px; padding: 30px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; border: 2px solid #0d47a1; display: none;">
+      <h3 style="color:#0d47a1; margin-bottom:25px; text-align: center;">Trade Request</h3>
       <form method="POST" action="{{ url_for('request_trade') }}">
         <input type="hidden" name="target_item_id" id="target_item_id">
         <input type="hidden" name="offer_item_id" id="offer_item_id">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <div style="text-align: center;">
-            <strong>You Offer:</strong>
-            <p id="offer_item_name" style="color: #0d47a1; font-weight: bold;"></p>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px;">
+          <!-- You Offer -->
+          <div style="flex: 1; text-align: center;">
+            <h4 style="color:#0d47a1; margin-bottom:15px;">You Offer:</h4>
+            <div class="selected-item-card" id="selected-offer-item">
+              <div class="selected-item-image" id="offer-item-image"></div>
+              <div class="selected-item-name" id="offer-item-name"></div>
+            </div>
           </div>
-          <div style="font-size: 24px;">⇄</div>
-          <div style="text-align: center;">
-            <strong>You Receive:</strong>
-            <p id="target_item_name" style="color: #0d47a1; font-weight: bold;"></p>
+
+          <!-- Exchange Icon -->
+          <div style="flex: 0 0 auto;">
+            <div style="font-size: 36px; color: #0d47a1; background: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+              ⇄
+            </div>
+          </div>
+
+          <!-- You Receive -->
+          <div style="flex: 1; text-align: center;">
+            <h4 style="color:#0d47a1; margin-bottom:15px;">You Receive:</h4>
+            <div class="selected-item-card" id="selected-target-item">
+              <div class="selected-item-image" id="target-item-image"></div>
+              <div class="selected-item-name" id="target-item-name"></div>
+            </div>
           </div>
         </div>
-        
-        <button type="submit" class="btn-primary" style="width: 100%;">Send Trade Request</button>
+
+        <button type="submit" class="submit-trade-btn">
+          Send Trade Request
+        </button>
       </form>
     </div>
 
   </div>
 </section>
 
+<style>
+.trade-item-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+.trade-item-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.trade-item-card .item-image {
+    position: relative;
+    height: 180px;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.trade-item-card .item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.trade-item-card .item-condition {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(13, 71, 161, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.trade-item-card .item-details {
+    padding: 15px;
+}
+
+/* Owner Info */
+.owner-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.owner-avatar {
+    width: 35px;
+    height: 35px;
+    background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.owner-details {
+    flex: 1;
+}
+
+.owner-label {
+    display: block;
+    font-size: 10px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1px;
+}
+
+.owner-name {
+    display: block;
+    font-size: 13px;
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 1px;
+}
+
+.owner-location {
+    display: block;
+    font-size: 11px;
+    color: #666;
+}
+
+.trade-item-card .item-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #0d47a1;
+    margin: 0 0 12px 0;
+}
+
+.trade-item-card .item-specs {
+    margin-bottom: 12px;
+}
+
+.trade-item-card .spec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    padding: 4px 0;
+}
+
+.trade-item-card .spec-label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+}
+
+.trade-item-card .spec-value {
+    font-size: 12px;
+    color: #333;
+    font-weight: 500;
+}
+
+.condition-badge {
+    background: #e8f5e8;
+    color: #2e7d32;
+    padding: 3px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.trade-item-card .description-section {
+    margin-bottom: 12px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.trade-item-card .item-description {
+    color: #555;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.trade-item-card .date-offered {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-top: 1px solid #f0f0f0;
+}
+
+.trade-item-card .date-label {
+    font-size: 11px;
+    color: #666;
+}
+
+.trade-item-card .date-value {
+    font-size: 11px;
+    color: #0d47a1;
+    font-weight: 500;
+}
+
+.select-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.select-btn:hover {
+    background: linear-gradient(135deg, #0b3d91 0%, #1565c0 100%);
+    transform: translateY(-2px);
+}
+
+.select-btn.selected {
+    background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+}
+
+/* Selected Items */
+.selected-item-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 2px solid #0d47a1;
+}
+
+.selected-item-image {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 10px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.selected-item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.selected-item-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: #0d47a1;
+    text-align: center;
+}
+
+.submit-trade-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-trade-btn:hover {
+    background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 152, 0, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .trade-item-card .item-details {
+        padding: 12px;
+    }
+
+    .trade-item-card .item-title {
+        font-size: 14px;
+    }
+}
+</style>
+
 <script>
 let selectedTargetItem = null;
 let selectedOfferItem = null;
 
-function selectTargetItem(itemId, itemName) {
-    selectedTargetItem = {id: itemId, name: itemName};
+function selectTargetItem(itemId, itemName, itemImage) {
+    // Remove previous selection
+    if (selectedTargetItem) {
+        const prevBtn = document.querySelector(`[data-item-id="${selectedTargetItem.id}"]`);
+        if (prevBtn) prevBtn.classList.remove('selected');
+    }
+
+    // Add new selection
+    const currentBtn = document.querySelector(`[data-item-id="${itemId}"]`);
+    currentBtn.classList.add('selected');
+    currentBtn.textContent = 'Selected for Trade';
+
+    selectedTargetItem = {id: itemId, name: itemName, image: itemImage};
     document.getElementById('target_item_id').value = itemId;
-    document.getElementById('target_item_name').textContent = itemName;
+    document.getElementById('target-item-name').textContent = itemName;
+
+    // Set image
+    const targetImage = document.getElementById('target-item-image');
+    targetImage.innerHTML = itemImage ?
+        `<img src="${itemImage}" alt="${itemName}" style="width:100%;height:100%;object-fit:cover;">` :
+        `<div style="width:100%;height:100%;background:#0d47a1;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;">No Image</div>`;
+
     checkTradeReady();
 }
 
-function selectOfferItem(itemId, itemName) {
-    selectedOfferItem = {id: itemId, name: itemName};
+function selectOfferItem(itemId, itemName, itemImage) {
+    // Remove previous selection
+    if (selectedOfferItem) {
+        const prevBtn = document.querySelector(`[data-item-id="${selectedOfferItem.id}"]`);
+        if (prevBtn) prevBtn.classList.remove('selected');
+    }
+
+    // Add new selection
+    const currentBtn = document.querySelector(`[data-item-id="${itemId}"]`);
+    currentBtn.classList.add('selected');
+    currentBtn.textContent = 'Selected to Offer';
+
+    selectedOfferItem = {id: itemId, name: itemName, image: itemImage};
     document.getElementById('offer_item_id').value = itemId;
-    document.getElementById('offer_item_name').textContent = itemName;
+    document.getElementById('offer-item-name').textContent = itemName;
+
+    // Set image
+    const offerImage = document.getElementById('offer-item-image');
+    offerImage.innerHTML = itemImage ?
+        `<img src="${itemImage}" alt="${itemName}" style="width:100%;height:100%;object-fit:cover;">` :
+        `<div style="width:100%;height:100%;background:#0d47a1;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;">No Image</div>`;
+
     checkTradeReady();
 }
 
 function checkTradeReady() {
     if (selectedTargetItem && selectedOfferItem) {
         document.getElementById('tradeForm').style.display = 'block';
+        document.getElementById('tradeForm').scrollIntoView({ behavior: 'smooth' });
     }
 }
 </script>
-
-<style>
-.item-card:hover {
-    background-color: #f5f5f5;
-    cursor: pointer;
-}
-</style>
 {% endblock %}
