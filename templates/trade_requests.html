@@ -5,6 +5,13 @@
     
     <h2 style="color:#0d47a1; margin-bottom:20px; text-align: center;">Trade Requests</h2>
 
+    <!-- Debug Info (remove after testing) -->
+    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0d47a1;">
+      <h4 style="color:#0d47a1; margin:0 0 10px 0;">Debug Info</h4>
+      <p style="margin:5px 0;"><strong>Logged in as:</strong> {{ session.username }} (User ID: {{ session.user_id }})</p>
+      <p style="margin:5px 0;"><strong>Total trades:</strong> {{ trades|length }}</p>
+    </div>
+
     {% if trades %}
     <div style="overflow-x: auto;">
       <table style="width:100%; border-collapse:collapse; text-align:left; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
@@ -17,6 +24,7 @@
             <th style="padding:15px; font-size:14px;">Status</th>
             <th style="padding:15px; font-size:14px;">Date</th>
             <th style="padding:15px; font-size:14px;">Actions</th>
+            <th style="padding:15px; font-size:14px;">Debug</th>
           </tr>
         </thead>
         <tbody>
@@ -33,24 +41,66 @@
               {{ trade['offer_full_name'] or trade['offer_username'] }}
             </td>
             <td style="padding:15px;">
-              <div style="font-weight: 500;">{{ trade['offer_item_name'] }}</div>
-              <small style="color: #666; font-size: 11px;">Your offered item</small>
-            </td>
-            <td style="padding:15px;">
-              <div style="font-weight: 500;">{{ trade['target_item_name'] }}</div>
+              <div style="font-weight: 500;">
+                {% if trade['request_type'] == 'Your Request' %}
+                    {{ trade['offer_item_name'] }}
+                {% else %}
+                    {{ trade['target_item_name'] }}
+                {% endif %}
+              </div>
               <small style="color: #666; font-size: 11px;">
                 {% if trade['request_type'] == 'Your Request' %}
-                Item you want from {{ trade['target_full_name'] or trade['target_username'] }}
+                    Your offered item
                 {% else %}
-                Item offered by {{ trade['offer_full_name'] or trade['offer_username'] }}
+                    Your item requested by {{ trade['offer_full_name'] or trade['offer_username'] }}
                 {% endif %}
               </small>
               <br>
-              <a href="{{ url_for('view_item', item_id=trade['target_item_id']) }}"
-                 target="_blank"
-                 style="margin-top: 5px; padding: 6px 12px; background: #546e7a; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-block;">
-                View Details
-              </a>
+              <!-- View Details for Your Item -->
+              {% if trade['request_type'] == 'Your Request' %}
+                <a href="{{ url_for('view_item', item_id=trade['offer_item_id']) }}"
+                   target="_blank"
+                   style="margin-top: 5px; padding: 6px 12px; background: #546e7a; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-block;">
+                  View Your Item
+                </a>
+              {% else %}
+                <a href="{{ url_for('view_item', item_id=trade['target_item_id']) }}"
+                   target="_blank"
+                   style="margin-top: 5px; padding: 6px 12px; background: #546e7a; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-block;">
+                  View Your Item
+                </a>
+              {% endif %}
+            </td>
+            <td style="padding:15px;">
+              <div style="font-weight: 500;">
+                {% if trade['request_type'] == 'Your Request' %}
+                    {{ trade['target_item_name'] }}
+                {% else %}
+                    {{ trade['offer_item_name'] }}
+                {% endif %}
+              </div>
+              <small style="color: #666; font-size: 11px;">
+                {% if trade['request_type'] == 'Your Request' %}
+                    Item you want from {{ trade['target_full_name'] or trade['target_username'] }}
+                {% else %}
+                    Item offered by {{ trade['offer_full_name'] or trade['offer_username'] }}
+                {% endif %}
+              </small>
+              <br>
+              <!-- View Details for Their Item -->
+              {% if trade['request_type'] == 'Your Request' %}
+                <a href="{{ url_for('view_item', item_id=trade['target_item_id']) }}"
+                   target="_blank"
+                   style="margin-top: 5px; padding: 6px 12px; background: #546e7a; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-block;">
+                  View Their Item
+                </a>
+              {% else %}
+                <a href="{{ url_for('view_item', item_id=trade['offer_item_id']) }}"
+                   target="_blank"
+                   style="margin-top: 5px; padding: 6px 12px; background: #546e7a; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-block;">
+                  View Their Item
+                </a>
+              {% endif %}
             </td>
             <td style="padding:15px;">
               <span style="padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;
@@ -60,13 +110,6 @@
                 {% else %}background-color: #ffebee; color: #c62828; border: 1px solid #c62828;{% endif %}">
                 {{ trade['trade_status']|title }}
               </span>
-              {% if trade['trade_status'] == 'accepted' %}
-              <div style="margin-top: 5px;">
-                <small style="color: #666; font-size: 11px;">
-                  📍 Arrange meetup or delivery
-                </small>
-              </div>
-              {% endif %}
             </td>
             <td style="padding:15px; color: #666; font-size: 13px;">
               {{ trade['trade_date'] }}
@@ -95,86 +138,47 @@
               </form>
 
               {% elif trade['trade_status'] == 'accepted' %}
-              <!-- Both traders can view trade history to manage meetup/delivery -->
-              <a href="{{ url_for('trade_history') }}"
-                 style="padding: 8px 12px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
-                Manage Trade
-              </a>
+              <!-- NEW: Unified Arrangement System Button -->
+              <div style="display: flex; gap: 5px; flex-direction: column;">
+                <a href="{{ url_for('trade_arrangement', trade_id=trade['trade_id']) }}"
+                   class="btn btn-info btn-sm"
+                   style="padding: 8px 12px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-block; text-align: center;">
+                  📋 Arrange Exchange
+                </a>
+
+                <!-- Keep the old Manage Trade link as backup -->
+                <a href="{{ url_for('trade_history') }}"
+                   style="padding: 6px 10px; background: linear-gradient(135deg, #546e7a 0%, #78909c 100%); color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-block; text-align: center;">
+                  Manage Trade (Old)
+                </a>
+              </div>
 
               {% else %}
               <span style="color: #999; font-size: 12px;">No actions available</span>
               {% endif %}
+            </td>
+            <td style="padding:15px; font-size: 11px; color: #666;">
+              <div>Trade ID: {{ trade['trade_id'] }}</div>
+              <div>Offer User: {{ trade['offer_user_id'] }}</div>
+              <div>Target User: {{ trade['target_user_id'] }}</div>
+              <div>You: {{ session.user_id }}</div>
             </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-
-    <!-- Information Section -->
-    <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #0d47a1;">
-      <h4 style="color:#0d47a1; margin-bottom:15px;">Trade Request Guide</h4>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-        <div>
-          <strong style="color: #2e7d32;">Your Request:</strong>
-          <p style="color: #666; font-size: 13px; margin: 5px 0;">Trade requests you sent to other traders. You can cancel if not accepted yet.</p>
-        </div>
-        <div>
-          <strong style="color: #0d47a1;">Incoming Request:</strong>
-          <p style="color: #666; font-size: 13px; margin: 5px 0;">Trade requests from other traders. You can accept or decline these.</p>
-        </div>
-        <div>
-          <strong style="color: #ef6c00;">Accepted Trades:</strong>
-          <p style="color: #666; font-size: 13px; margin: 5px 0;">Go to Trade History to arrange meetup/delivery and mark items as received.</p>
-        </div>
-      </div>
-    </div>
-
     {% else %}
-    <div style="text-align: center; padding: 60px 20px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-      <div style="font-size: 64px; margin-bottom: 20px;">🔄</div>
-      <h3 style="color:#666; margin-bottom:15px;">No Trade Requests</h3>
-      <p style="color:#999; margin-bottom:30px; max-width: 400px; margin-left: auto; margin-right: auto;">
-        You don't have any trade requests yet. Start trading by browsing items from other traders!
-      </p>
+    <!-- Empty state -->
+    <div style="text-align: center; padding: 40px; color: #666;">
+      <h3 style="color: #999; margin-bottom: 10px;">No Trade Requests Yet</h3>
+      <p>When you send or receive trade requests, they will appear here.</p>
+      <a href="{{ url_for('other_traders_items') }}"
+         style="display: inline-block; margin-top: 15px; padding: 10px 20px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 6px; text-decoration: none; font-weight: bold;">
+        Browse Items to Trade
+      </a>
     </div>
     {% endif %}
-
-    <div style="margin-top:30px; display:flex; gap:10px; flex-wrap:wrap; justify-content: center;">
-      <a href="{{ url_for('other_traders_items') }}" class="btn-primary" style="padding: 12px 24px; background: linear-gradient(135deg, #546e7a 0%, #78909c 100%); border: none; border-radius: 8px; color: white; font-weight: bold; text-decoration: none; transition: all 0.3s ease;">
-        Browse Items
-      </a>
-      <a href="{{ url_for('request_trade') }}" class="btn-primary" style="padding: 12px 24px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); border: none; border-radius: 8px; color: white; font-weight: bold; text-decoration: none; transition: all 0.3s ease;">
-        Request New Trade
-      </a>
-      <a href="{{ url_for('trade_history') }}" class="btn-primary" style="padding: 12px 24px; background: linear-gradient(135deg, #795548 0%, #8d6e63 100%); border: none; border-radius: 8px; color: white; font-weight: bold; text-decoration: none; transition: all 0.3s ease;">
-        View Trade History
-      </a>
-    </div>
-
   </div>
 </section>
-
-<style>
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-tr:hover {
-    background-color: #f8f9fa !important;
-}
-
-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-
-/* Style for the View Details link */
-a[href*="view_item"]:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    background: #455a64 !important;
-}
-</style>
 {% endblock %}

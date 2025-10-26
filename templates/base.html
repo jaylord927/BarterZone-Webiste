@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BarterZone</title>
+    <title>BarterZone - {% block title %}Trade Without Money{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- ===== Navbar ===== -->
@@ -29,23 +30,53 @@
         </ul>
     </div>
 
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages() %}
+    <!-- Enhanced Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div style="background: #ff9800; color: white; padding: 10px; text-align: center;">
-                {% for message in messages %}
-                    {{ message }}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">
+                        {{ message }}
+                        <button class="flash-close" onclick="this.parentElement.remove()">×</button>
+                    </div>
                 {% endfor %}
             </div>
         {% endif %}
     {% endwith %}
 
     <!-- Main Content -->
-    {% block content %}{% endblock %}
+    <main>
+        {% block content %}{% endblock %}
+    </main>
 
     <!-- ===== Footer ===== -->
     <footer>
-        <p>© 2025 BarterZone. All rights reserved.</p>
+        <p>© 2025 BarterZone. Trade without money. All rights reserved.</p>
     </footer>
+
+    <script>
+        // Auto-hide flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(message => {
+                setTimeout(() => {
+                    if (message.parentElement) {
+                        message.style.animation = 'slideOutRight 0.3s ease-in';
+                        setTimeout(() => message.remove(), 300);
+                    }
+                }, 5000);
+            });
+        });
+
+        // Add slideOutRight animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
 </body>
 </html>

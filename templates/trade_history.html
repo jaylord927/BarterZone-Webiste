@@ -2,132 +2,354 @@
 {% block content %}
 <section class="hero-section">
   <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 1200px; width:100%; padding:20px; border-radius:10px;">
-    
-    <h2 style="color:#0d47a1; margin-bottom:20px;">Trade History</h2>
-    
+
+    <h2 style="color:#0d47a1; margin-bottom:20px; text-align: center;">Trade History & Arrangements</h2>
+
+    <!-- User Guidance Section -->
+    <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #0d47a1;">
+      <h4 style="color:#0d47a1; margin-top:0;">📋 BarterZone Trade Guide</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+        <div style="background: white; padding: 15px; border-radius: 8px;">
+          <h5 style="color:#0d47a1; margin:0 0 10px 0;">🤝 Meetup Exchange</h5>
+          <p style="margin:0; font-size:14px;">Agree on location, date, and time. Meet in person to exchange items.</p>
+        </div>
+        <div style="background: white; padding: 15px; border-radius: 8px;">
+          <h5 style="color:#0d47a1; margin:0 0 10px 0;">🚚 Delivery Exchange</h5>
+          <p style="margin:0; font-size:14px;">Send items via courier. Provide addresses and track deliveries.</p>
+        </div>
+        <div style="background: white; padding: 15px; border-radius: 8px;">
+          <h5 style="color:#0d47a1; margin:0 0 10px 0;">🔀 Mixed Method</h5>
+          <p style="margin:0; font-size:14px;">One delivers, one meets up. Flexible arrangement options.</p>
+        </div>
+      </div>
+    </div>
+
     {% if history %}
-    <div style="overflow-x: auto;">
-      <table style="width:100%; border-collapse:collapse; text-align:left;">
+<div style="overflow-x: auto;">
+    <table style="width:100%; border-collapse:collapse; text-align:left; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
         <thead>
-          <tr style="background-color:#0d47a1; color:white;">
-            <th style="padding:12px;">Offered By</th>
-            <th style="padding:12px;">Traded With</th>
-            <th style="padding:12px;">Offered Item</th>
-            <th style="padding:12px;">Target Item</th>
-            <th style="padding:12px;">Status</th>
-            <th style="padding:12px;">Date Completed</th>
-            <th style="padding:12px;">Actions</th>
-          </tr>
+            <tr style="background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color:white;">
+                <th style="padding:15px; font-size:14px;">Trade Details</th>
+                <th style="padding:15px; font-size:14px;">Exchange Method</th>
+                <th style="padding:15px; font-size:14px;">Arrangement Status</th>
+                <th style="padding:15px; font-size:14px;">Receipt Status</th>
+                <th style="padding:15px; font-size:14px;">Actions</th>
+            </tr>
         </thead>
         <tbody>
-          {% for trade in history %}
-          <tr style="border-bottom:1px solid #ddd;">
-            <td style="padding:12px; font-weight:bold; color:#0d47a1;">
-              {{ trade['offer_full_name'] or trade['offer_username'] }}
-            </td>
-            <td style="padding:12px; font-weight:bold; color:#0d47a1;">
-              {{ trade['target_full_name'] or trade['target_username'] }}
-            </td>
-            <td style="padding:12px;">
-              {% if trade['offer_item_name'] %}
-                {{ trade['offer_item_name'] }}
-              {% else %}
-                <span style="color: #999; font-style: italic;">[Item Deleted]</span>
-              {% endif %}
-            </td>
-            <td style="padding:12px;">
-              {% if trade['target_item_name'] %}
-                {{ trade['target_item_name'] }}
-              {% else %}
-                <span style="color: #999; font-style: italic;">[Item Deleted]</span>
-              {% endif %}
-            </td>
-            <td style="padding:12px;">
-              {% if trade['trade_status'] == 'completed' %}
-                <span style="padding: 4px 8px; border-radius: 4px; background-color: #e8f5e8; color: #2e7d32; font-weight: bold;">
-                  Completed
-                </span>
-              {% else %}
-                <span style="padding: 4px 8px; border-radius: 4px; background-color: #fff3e0; color: #ef6c00; font-weight: bold;">
-                  Accepted
-                </span>
-              {% endif %}
-            </td>
-            <td style="padding:12px;">{{ trade['trade_date'] }}</td>
-            <td style="padding:12px;">
-              {% if trade['trade_status'] == 'completed' %}
-                <span style="padding: 4px 8px; border-radius: 4px; background-color: #4CAF50; color: white; font-size: 12px;">
-                  Both Received
-                </span>
-              {% else %}
-                {# Check if current user is offer trader #}
-                {% if trade['offer_user_id'] == user_id %}
-                  {% if trade['offer_received'] %}
-                    {% if trade['target_received'] %}
-                      <span style="padding: 4px 8px; border-radius: 4px; background-color: #4CAF50; color: white; font-size: 12px;">
-                        Both Received
-                      </span>
-                    {% else %}
-                      <span style="padding: 4px 8px; border-radius: 4px; background-color: #ff9800; color: white; font-size: 12px;">
-                        Waiting for {{ trade['target_full_name'] or trade['target_username'] }} to receive
-                      </span>
-                    {% endif %}
-                  {% else %}
-                    <form method="POST" action="{{ url_for('mark_item_received', trade_id=trade['trade_id']) }}" style="display: inline;">
-                      <button type="submit" class="btn-primary" style="padding: 4px 8px; font-size: 12px; background-color: #ff9800;">
-                        Mark Received
-                      </button>
-                    </form>
-                  {% endif %}
+            {% for trade in history %}
+            <tr style="border-bottom:1px solid #f0f0f0; transition: background-color 0.3s ease;">
+                <td style="padding:15px;">
+    <!-- Trade Partner Info -->
+    <div style="margin-bottom: 10px;">
+        <strong style="color:#0d47a1;">
+            {% if trade['offer_user_id'] == session.user_id %}
+                Trading with: {{ trade['target_full_name'] or trade['target_username'] }}
+            {% else %}
+                Trading with: {{ trade['offer_full_name'] or trade['offer_username'] }}
+            {% endif %}
+        </strong>
+    </div>
 
-                {# Check if current user is target trader #}
+    <!-- Item Exchange with Images -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+        <!-- Your Item -->
+        <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center;">
+            <small style="color:#666;">Your Item:</small>
+
+            <!-- Item Image -->
+            <div style="height: 60px; margin: 5px 0; border-radius: 4px; overflow: hidden; background: #e0e0e0;">
+                {% if trade['offer_user_id'] == session.user_id %}
+                    <!-- You are the offer user - show your offered item -->
+                    {% if trade['offer_item_image'] %}
+                    <img src="{{ trade['offer_item_image'] }}"
+                         alt="{{ trade['offer_item_name'] }}"
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         onerror="this.src='https://via.placeholder.com/100x60/0d47a1/ffffff?text=No+Image'">
+                    {% else %}
+                    <img src="https://via.placeholder.com/100x60/0d47a1/ffffff?text=No+Image"
+                         alt="{{ trade['offer_item_name'] }}"
+                         style="width: 100%; height: 100%; object-fit: cover;">
+                    {% endif %}
                 {% else %}
-                  {% if trade['target_received'] %}
-                    {% if trade['offer_received'] %}
-                      <span style="padding: 4px 8px; border-radius: 4px; background-color: #4CAF50; color: white; font-size: 12px;">
-                        Both Received
-                      </span>
+                    <!-- You are the target user - show the item you received -->
+                    {% if trade['target_item_image'] %}
+                    <img src="{{ trade['target_item_image'] }}"
+                         alt="{{ trade['target_item_name'] }}"
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         onerror="this.src='https://via.placeholder.com/100x60/0d47a1/ffffff?text=No+Image'">
                     {% else %}
-                      <span style="padding: 4px 8px; border-radius: 4px; background-color: #ff9800; color: white; font-size: 12px;">
-                        Waiting for {{ trade['offer_full_name'] or trade['offer_username'] }} to receive
-                      </span>
+                    <img src="https://via.placeholder.com/100x60/0d47a1/ffffff?text=No+Image"
+                         alt="{{ trade['target_item_name'] }}"
+                         style="width: 100%; height: 100%; object-fit: cover;">
                     {% endif %}
-                  {% else %}
-                    <form method="POST" action="{{ url_for('mark_item_received', trade_id=trade['trade_id']) }}" style="display: inline;">
-                      <button type="submit" class="btn-primary" style="padding: 4px 8px; font-size: 12px; background-color: #ff9800;">
-                        Mark Received
-                      </button>
-                    </form>
-                  {% endif %}
                 {% endif %}
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            </div>
+
+            <div style="font-weight:500; font-size: 12px; margin-top: 5px;">
+                {% if trade['offer_user_id'] == session.user_id %}
+                    {{ trade['offer_item_name'] }}
+                {% else %}
+                    {{ trade['target_item_name'] }}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Their Item -->
+        <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center;">
+            <small style="color:#666;">Their Item:</small>
+
+            <!-- Item Image -->
+            <div style="height: 60px; margin: 5px 0; border-radius: 4px; overflow: hidden; background: #e0e0e0;">
+                {% if trade['offer_user_id'] == session.user_id %}
+                    <!-- You are the offer user - show the item you receive -->
+                    {% if trade['target_item_image'] %}
+                    <img src="{{ trade['target_item_image'] }}"
+                         alt="{{ trade['target_item_name'] }}"
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         onerror="this.src='https://via.placeholder.com/100x60/546e7a/ffffff?text=No+Image'">
+                    {% else %}
+                    <img src="https://via.placeholder.com/100x60/546e7a/ffffff?text=No+Image"
+                         alt="{{ trade['target_item_name'] }}"
+                         style="width: 100%; height: 100%; object-fit: cover;">
+                    {% endif %}
+                {% else %}
+                    <!-- You are the target user - show their offered item -->
+                    {% if trade['offer_item_image'] %}
+                    <img src="{{ trade['offer_item_image'] }}"
+                         alt="{{ trade['offer_item_name'] }}"
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         onerror="this.src='https://via.placeholder.com/100x60/546e7a/ffffff?text=No+Image'">
+                    {% else %}
+                    <img src="https://via.placeholder.com/100x60/546e7a/ffffff?text=No+Image"
+                         alt="{{ trade['offer_item_name'] }}"
+                         style="width: 100%; height: 100%; object-fit: cover;">
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <div style="font-weight:500; font-size: 12px; margin-top: 5px;">
+                {% if trade['offer_user_id'] == session.user_id %}
+                    {{ trade['target_item_name'] }}
+                {% else %}
+                    {{ trade['offer_item_name'] }}
+                {% endif %}
+            </div>
+        </div>
     </div>
 
-    <div style="margin-top: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 5px;">
-      <p style="margin: 0; color: #0d47a1;">
-        <strong>Note:</strong>
-        <span style="background-color: #fff3e0; padding: 2px 6px; border-radius: 3px; color: #ef6c00;">Accepted</span> = Trade accepted, waiting for items to be received
-        <span style="margin-left: 15px; background-color: #e8f5e8; padding: 2px 6px; border-radius: 3px; color: #2e7d32;">Completed</span> = Both traders have received their items
-      </p>
-    </div>
+    <small style="color: #666;">Trade Date: {{ trade['trade_date'] }}</small>
 
-    {% else %}
-    <div style="text-align: center; padding: 40px;">
-      <h3 style="color:#666; margin-bottom:15px;">No Trade History</h3>
-      <p style="color:#999; margin-bottom:20px;">You haven't completed any trades yet.</p>
+    <!-- Arrangement Details Preview -->
+    {% if trade['arrangement_method'] %}
+    <div style="margin-top: 8px; padding: 8px; background: #e3f2fd; border-radius: 4px;">
+        <small style="color:#0d47a1;">
+            <strong>Method:</strong> {{ trade['arrangement_method']|title }}
+            {% if trade['arrangement_method'] == 'delivery' and trade['delivery_address'] %}
+            • {{ trade['delivery_address'][:20] }}...
+            {% elif trade['arrangement_method'] == 'meetup' and trade['meetup_location'] %}
+            • {{ trade['meetup_location'][:20] }}...
+            {% endif %}
+        </small>
     </div>
     {% endif %}
+</td>
 
-    <div style="margin-top:20px;">
-      <a href="{{ url_for('view_trade_requests') }}" class="btn-primary">Back to Trade Requests</a>
-      <a href="{{ url_for('dashboard') }}" class="btn-primary" style="background-color: #546e7a; margin-left:10px;">Back to Dashboard</a>
+                <td style="padding:15px;">
+                    {% if trade['arrangement_method'] %}
+                        <div style="text-align: center;">
+                            {% if trade['arrangement_method'] == 'meetup' %}
+                                <div style="background: #e8f5e8; color: #2e7d32; padding: 8px; border-radius: 6px; border: 1px solid #2e7d32;">
+                                    <strong>🤝 Meetup</strong>
+                                </div>
+                                {% if trade['meetup_location'] %}
+                                <small style="display:block; margin-top:5px; color:#666;">{{ trade['meetup_location'] }}</small>
+                                {% endif %}
+                            {% elif trade['arrangement_method'] == 'delivery' %}
+                                <div style="background: #e3f2fd; color: #0d47a1; padding: 8px; border-radius: 6px; border: 1px solid #0d47a1;">
+                                    <strong>🚚 Delivery</strong>
+                                </div>
+                                {% if trade['delivery_address'] %}
+                                <small style="display:block; margin-top:5px; color:#666;">{{ trade['delivery_address'][:25] }}...</small>
+                                {% endif %}
+                            {% elif trade['arrangement_method'] == 'mixed' %}
+                                <div style="background: #fff3e0; color: #ef6c00; padding: 8px; border-radius: 6px; border: 1px solid #ef6c00;">
+                                    <strong>🔀 Mixed</strong>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div style="text-align: center;">
+                            <div style="background: #fff3e0; color: #ef6c00; padding: 8px; border-radius: 6px; border: 1px solid #ef6c00;">
+                                <strong>⏳ Pending Setup</strong>
+                            </div>
+                        </div>
+                    {% endif %}
+                </td>
+
+                <td style="padding:15px;">
+                    {% if trade['arrangement_status'] %}
+                        <div style="text-align: center;">
+                            {% if trade['arrangement_status'] == 'pending' %}
+                                <span style="padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; background-color: #fff3e0; color: #ef6c00; border: 1px solid #ef6c00;">
+                                    ⏳ Negotiating
+                                </span>
+                                <small style="display:block; margin-top:5px; color:#666;">Discussing details</small>
+                            {% elif trade['arrangement_status'] == 'accepted' %}
+                                <span style="padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; background-color: #e8f5e8; color: #2e7d32; border: 1px solid #2e7d32;">
+                                    ✅ Accepted
+                                </span>
+                                <small style="display:block; margin-top:5px; color:#666;">Ready for exchange</small>
+                            {% elif trade['arrangement_status'] == 'completed' %}
+                                <span style="padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; background-color: #e3f2fd; color: #0d47a1; border: 1px solid #0d47a1;">
+                                    🎉 Completed
+                                </span>
+                                <small style="display:block; margin-top:5px; color:#666;">Exchange successful</small>
+                            {% else %}
+                                <span style="padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; background-color: #ffebee; color: #c62828; border: 1px solid #c62828;">
+                                    ❌ Cancelled
+                                </span>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div style="text-align: center;">
+                            <span style="padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; background-color: #f5f5f5; color: #666; border: 1px solid #ddd;">
+                                Not Started
+                            </span>
+                        </div>
+                    {% endif %}
+                </td>
+
+                <td style="padding:15px;">
+                    <div style="text-align: center;">
+                        {% if trade['offer_received'] and trade['target_received'] %}
+                            <div style="background: #e8f5e8; color: #2e7d32; padding: 8px; border-radius: 6px; border: 1px solid #2e7d32;">
+                                <strong>✅ Both Received</strong>
+                            </div>
+                            <small style="display:block; margin-top:5px; color:#666;">Items exchanged</small>
+                        {% elif trade['offer_received'] or trade['target_received'] %}
+                            <div style="background: #fff3e0; color: #ef6c00; padding: 8px; border-radius: 6px; border: 1px solid #ef6c00;">
+                                <strong>⏳ One Received</strong>
+                            </div>
+                            <small style="display:block; margin-top:5px; color:#666;">
+                                {% if trade['offer_user_id'] == session.user_id and trade['offer_received'] %}
+                                    You received
+                                {% elif trade['target_user_id'] == session.user_id and trade['target_received'] %}
+                                    You received
+                                {% else %}
+                                    They received
+                                {% endif %}
+                            </small>
+                        {% else %}
+                            <div style="background: #f5f5f5; color: #666; padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
+                                <strong>📦 Not Received</strong>
+                            </div>
+                        {% endif %}
+                    </div>
+                </td>
+
+                <td style="padding:15px;">
+                    <div style="display: flex; gap: 5px; flex-direction: column;">
+                        <!-- Main Action Button -->
+                        {% if not trade['arrangement_method'] or trade['arrangement_status'] == 'pending' %}
+                            <a href="{{ url_for('trade_arrangement', trade_id=trade['trade_id']) }}"
+                               style="padding: 8px 12px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; text-decoration: none; text-align: center;">
+                                📋 Setup Exchange
+                            </a>
+                        {% elif trade['arrangement_status'] == 'accepted' %}
+                            <a href="{{ url_for('trade_arrangement', trade_id=trade['trade_id']) }}"
+                               style="padding: 8px 12px; background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; text-decoration: none; text-align: center;">
+                                🔄 Manage Exchange
+                            </a>
+
+                            <!-- Mark as Received Button -->
+                            {% if (trade['offer_user_id'] == session.user_id and not trade['offer_received']) or
+                                  (trade['target_user_id'] == session.user_id and not trade['target_received']) %}
+                                <form method="POST" action="{{ url_for('mark_item_received', trade_id=trade['trade_id']) }}" style="margin:0;">
+                                    <button type="submit"
+                                            style="width:100%; padding: 6px 10px; background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%); color: white; border: none; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">
+                                        📦 Mark Received
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                        {% elif trade['arrangement_status'] == 'completed' %}
+                            <div style="text-align: center;">
+                                <span style="color: #4CAF50; font-weight: bold;">✓ Completed</span>
+                                <br>
+                                <small style="color: #666;">Exchange successful!</small>
+                            </div>
+                        {% endif %}
+
+                        <!-- View Details Button -->
+                        <a href="{{ url_for('trade_arrangement', trade_id=trade['trade_id']) }}"
+                           style="padding: 6px 10px; background: #546e7a; color: white; border: none; border-radius: 4px; font-size: 11px; text-decoration: none; text-align: center;">
+                            View Details
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <!-- Empty state -->
+    <div style="text-align: center; padding: 60px 20px; color: #666;">
+      <div style="font-size: 64px; margin-bottom: 20px;">📦</div>
+      <h3 style="color: #999; margin-bottom: 15px;">No Trade History Yet</h3>
+      <p style="margin-bottom: 25px; max-width: 500px; margin-left: auto; margin-right: auto;">
+        When you complete trade arrangements and exchanges, they will appear here with detailed status tracking.
+      </p>
+      <div style="display: flex; gap: 15px; justify-content: center;">
+        <a href="{{ url_for('other_traders_items') }}"
+           style="padding: 12px 24px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 6px; text-decoration: none; font-weight: bold;">
+          Browse Items to Trade
+        </a>
+        <a href="{{ url_for('view_trade_requests') }}"
+           style="padding: 12px 24px; background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%); color: white; border: none; border-radius: 6px; text-decoration: none; font-weight: bold;">
+          View Trade Requests
+        </a>
+      </div>
     </div>
-
+    {% endif %}
   </div>
 </section>
+
+<script>
+// Function to toggle details view
+function toggleDetails(tradeId) {
+  const detailsRow = document.getElementById('details-' + tradeId);
+  if (detailsRow.style.display === 'none') {
+    detailsRow.style.display = 'table-row';
+  } else {
+    detailsRow.style.display = 'none';
+  }
+}
+
+// Make entire row clickable for details (except action buttons)
+document.addEventListener('DOMContentLoaded', function() {
+  const rows = document.querySelectorAll('tbody tr');
+  rows.forEach(row => {
+    if (!row.id.startsWith('details-')) {
+      row.addEventListener('click', function(e) {
+        // Don't trigger if clicking on buttons or links
+        if (!e.target.closest('a') && !e.target.closest('button') && !e.target.closest('form')) {
+          const tradeId = this.querySelector('td:last-child small')?.textContent.match(/Trade ID: (\d+)/)?.[1];
+          if (tradeId) {
+            toggleDetails(tradeId);
+          }
+        }
+      });
+    }
+  });
+});
+</script>
+
+<style>
+tbody tr:not([id]):hover {
+  background-color: #f8f9fa !important;
+  cursor: pointer;
+}
+</style>
 {% endblock %}

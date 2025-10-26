@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import sqlite3
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'secretkey'
@@ -13,6 +14,7 @@ DB_NAME = "barterzone.db"
 
 def init_db():
     with sqlite3.connect(DB_NAME) as conn:
+        # Users table
         conn.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,6 +27,8 @@ def init_db():
             contact TEXT
         );
         """)
+
+        # Items table
         conn.execute("""
         CREATE TABLE IF NOT EXISTS items (
             items_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,17 +36,182 @@ def init_db():
             item_Name TEXT,
             item_Brand TEXT,
             item_Condition TEXT,
-            item_Date TEXT,
+            item_DateBought TEXT,
+            item_DateOffered TEXT,
             item_Description TEXT,
+            item_image TEXT,
             FOREIGN KEY (user_id) REFERENCES users (id)
         );
         """)
 
+        # Updated Trades table with delivery/meet-up columns
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS trades (
+            trade_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            offer_user_id INTEGER NOT NULL,
+            target_user_id INTEGER NOT NULL,
+            offer_item_id INTEGER NOT NULL,
+            target_item_id INTEGER NOT NULL,
+            trade_status TEXT DEFAULT 'pending',
+            trade_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            offer_received BOOLEAN DEFAULT 0,
+            target_received BOOLEAN DEFAULT 0,
+            delivery_location TEXT,
+            delivery_confirmed BOOLEAN DEFAULT 0,
+            meetup_location TEXT,
+            meetup_gps TEXT,
+            meetup_confirmed BOOLEAN DEFAULT 0,
+            FOREIGN KEY (offer_user_id) REFERENCES users (id),
+            FOREIGN KEY (target_user_id) REFERENCES users (id),
+            FOREIGN KEY (offer_item_id) REFERENCES items (items_id),
+            FOREIGN KEY (target_item_id) REFERENCES items (items_id)
+        );
+        """)
+
+        # Trade messages table
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS trade_messages (
+            message_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            message_text TEXT NOT NULL,
+            message_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (sender_id) REFERENCES users (id),
+            FOREIGN KEY (receiver_id) REFERENCES users (id)
+        );
+        """)
+
+        conn.execute("""
+               CREATE TABLE IF NOT EXISTS trade_arrangements (
+                   id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   trade_id INTEGER NOT NULL,
+                   initiator_id INTEGER NOT NULL,
+                   method TEXT NOT NULL,
+                   status TEXT DEFAULT 'pending',
+                   meetup_location TEXT,
+                   meetup_date TEXT,
+                   meetup_time TEXT,
+                   delivery_address TEXT,
+                   delivery_date TEXT,
+                   delivery_instructions TEXT,
+                   courier_option TEXT,
+                   tracking_number TEXT,
+                   user1_confirmed_receipt BOOLEAN DEFAULT 0,
+                   user2_confirmed_receipt BOOLEAN DEFAULT 0,
+                   user1_confirmed_details BOOLEAN DEFAULT 0,
+                   user2_confirmed_details BOOLEAN DEFAULT 0,
+                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                   FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
+                   FOREIGN KEY (initiator_id) REFERENCES users (id)
+               );
+               """)
+
+        # NEW: Trade Messages table for negotiations
+        conn.execute("""
+               CREATE TABLE IF NOT EXISTS trade_messages_negotiation (
+                   id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   trade_id INTEGER NOT NULL,
+                   user_id INTEGER NOT NULL,
+                   message_type TEXT,
+                   content TEXT,
+                   suggested_location TEXT,
+                   suggested_date TEXT,
+                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                   FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
+                   FOREIGN KEY (user_id) REFERENCES users (id)
+               );
+               """)
 
 # Ensure DB exists
 if not os.path.exists(DB_NAME):
     init_db()
 
+
+def migrate_database():
+    """Add new tables and columns to existing database"""
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            # Add missing columns to trades table
+            missing_columns = [
+                ('meetup_preferred', 'BOOLEAN DEFAULT 0'),
+                ('meetup_date', 'TEXT'),
+                ('meetup_time', 'TEXT'),
+                ('delivery_preferred', 'BOOLEAN DEFAULT 0'),
+                ('delivery_date', 'TEXT'),
+                ('delivery_courier', 'TEXT'),
+                ('tracking_number', 'TEXT'),
+                ('cancellation_reason', 'TEXT')
+            ]
+
+            for column_name, column_type in missing_columns:
+                try:
+                    conn.execute(f"ALTER TABLE trades ADD COLUMN {column_name} {column_type}")
+                    print(f"✅ Added {column_name} column to trades table")
+                except sqlite3.OperationalError as e:
+                    if "duplicate column name" in str(e):
+                        print(f"ℹ️ {column_name} column already exists")
+                    else:
+                        print(f"❌ Error adding {column_name}: {e}")
+
+            # Check if trade_arrangements table exists
+            result = conn.execute("""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='trade_arrangements'
+            """).fetchone()
+
+            if not result:
+                print("Adding new tables to database...")
+
+                # Create Trade Arrangements table
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS trade_arrangements (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trade_id INTEGER NOT NULL,
+                    initiator_id INTEGER NOT NULL,
+                    method TEXT NOT NULL,
+                    status TEXT DEFAULT 'pending',
+                    meetup_location TEXT,
+                    meetup_date TEXT,
+                    meetup_time TEXT,
+                    delivery_address TEXT,
+                    delivery_date TEXT,
+                    delivery_instructions TEXT,
+                    courier_option TEXT,
+                    tracking_number TEXT,
+                    user1_confirmed_receipt BOOLEAN DEFAULT 0,
+                    user2_confirmed_receipt BOOLEAN DEFAULT 0,
+                    user1_confirmed_details BOOLEAN DEFAULT 0,
+                    user2_confirmed_details BOOLEAN DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
+                    FOREIGN KEY (initiator_id) REFERENCES users (id)
+                );
+                """)
+
+                # Create Trade Messages for Negotiation table
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS trade_messages_negotiation (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trade_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    message_type TEXT,
+                    content TEXT,
+                    suggested_location TEXT,
+                    suggested_date TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                );
+                """)
+
+                print("Database migration completed successfully!")
+            else:
+                print("New tables already exist.")
+
+    except Exception as e:
+        print(f"Migration error: {e}")
 
 # =====================
 # ROUTES
@@ -374,6 +543,8 @@ def view_trade_requests():
             SELECT t.*, 
                    oi.item_Name as offer_item_name,
                    ti.item_Name as target_item_name,
+                   oi.items_id as offer_item_id,
+                   ti.items_id as target_item_id,
                    offer_user.username as offer_username,
                    offer_user.full_name as offer_full_name,
                    target_user.username as target_username,
@@ -405,14 +576,22 @@ def respond_trade(trade_id):
     action = request.form['action']
 
     with sqlite3.connect(DB_NAME) as conn:
-        # Verify user can respond to this trade
-        trade = conn.execute(
-            "SELECT * FROM trades WHERE trade_id = ? AND target_user_id = ? AND trade_status = 'pending'",
-            (trade_id, user_id)
-        ).fetchone()
+        # ✅ FIX: Check if user can perform this action based on action type
+        if action == 'cancel':
+            # User can cancel their own pending requests (offer user)
+            trade = conn.execute(
+                "SELECT * FROM trades WHERE trade_id = ? AND offer_user_id = ? AND trade_status = 'pending'",
+                (trade_id, user_id)
+            ).fetchone()
+        else:
+            # For accept/decline, user must be the target user
+            trade = conn.execute(
+                "SELECT * FROM trades WHERE trade_id = ? AND target_user_id = ? AND trade_status = 'pending'",
+                (trade_id, user_id)
+            ).fetchone()
 
         if not trade:
-            flash('Trade not found or you cannot respond to it.', 'error')
+            flash('Trade not found or you cannot perform this action.', 'error')
             return redirect(url_for('view_trade_requests'))
 
         if action == 'accept':
@@ -420,18 +599,6 @@ def respond_trade(trade_id):
                 "UPDATE trades SET trade_status = 'accepted' WHERE trade_id = ?",
                 (trade_id,)
             )
-
-            # Move to history
-            trade_data = conn.execute(
-                "SELECT * FROM trades WHERE trade_id = ?", (trade_id,)
-            ).fetchone()
-
-            conn.execute("""
-                INSERT INTO trade_history 
-                (trade_id, offer_user_id, target_user_id, offer_item_id, target_item_id, trade_status, trade_date_request)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (trade_id, trade_data[1], trade_data[2], trade_data[3], trade_data[4], 'completed', trade_data[6]))
-
             flash('Trade accepted successfully!', 'success')
 
         elif action == 'decline':
@@ -449,6 +616,32 @@ def respond_trade(trade_id):
             flash('Trade cancelled.', 'info')
 
     return redirect(url_for('view_trade_requests'))
+
+
+@app.route('/debug/trade/<int:trade_id>')
+def debug_trade(trade_id):
+    """Debug route to check trade arrangement"""
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+
+        arrangement = conn.execute(
+            "SELECT * FROM trade_arrangements WHERE trade_id = ?",
+            (trade_id,)
+        ).fetchone()
+
+        trade = conn.execute(
+            "SELECT * FROM trades WHERE trade_id = ?",
+            (trade_id,)
+        ).fetchone()
+
+        return f"""
+        <h1>Debug Trade {trade_id}</h1>
+        <h2>Trade Table</h2>
+        <pre>{dict(trade) if trade else 'No trade found'}</pre>
+        <h2>Arrangement Table</h2>
+        <pre>{dict(arrangement) if arrangement else 'No arrangement found'}</pre>
+        """
+        return result
 
 @app.route('/view_item/<int:item_id>')
 def view_item(item_id):
@@ -468,11 +661,9 @@ def view_item(item_id):
 
     return render_template('singleviewingitem.html', item=item)
 
-# Update the trade_history route in app.py
-
 @app.route('/trade_history')
 def trade_history():
-    """View trade history with receipt tracking"""
+    """View trade history with arrangement details"""
     if 'user_id' not in session:
         flash('Please login first.', 'warning')
         return redirect(url_for('login'))
@@ -483,18 +674,36 @@ def trade_history():
         conn.row_factory = sqlite3.Row
 
         history = conn.execute("""
-            SELECT t.*,
-                   oi.item_Name as offer_item_name,
-                   ti.item_Name as target_item_name,
-                   offer_user.username as offer_username,
-                   offer_user.full_name as offer_full_name,
-                   target_user.username as target_username,
-                   target_user.full_name as target_full_name
+            SELECT 
+                t.*,
+                oi.item_Name as offer_item_name,
+                oi.item_image as offer_item_image,
+                ti.item_Name as target_item_name, 
+                ti.item_image as target_item_image,
+                offer_user.username as offer_username,
+                offer_user.full_name as offer_full_name,
+                target_user.username as target_username,
+                target_user.full_name as target_full_name,
+                ta.method as arrangement_method,
+                ta.status as arrangement_status,
+                ta.meetup_location,
+                ta.meetup_date,
+                ta.meetup_time,
+                ta.delivery_address,
+                ta.delivery_date,
+                ta.courier_option,
+                ta.user1_confirmed_receipt,
+                ta.user2_confirmed_receipt,
+                ta.user1_confirmed_details,
+                ta.user2_confirmed_details,
+                ta.created_at as arrangement_created,
+                ta.updated_at as arrangement_updated
             FROM trades t
             LEFT JOIN items oi ON t.offer_item_id = oi.items_id
             LEFT JOIN items ti ON t.target_item_id = ti.items_id
             JOIN users offer_user ON t.offer_user_id = offer_user.id
             JOIN users target_user ON t.target_user_id = target_user.id
+            LEFT JOIN trade_arrangements ta ON t.trade_id = ta.trade_id
             WHERE (t.offer_user_id = ? OR t.target_user_id = ?) 
             AND t.trade_status IN ('accepted', 'completed')
             ORDER BY t.trade_date DESC
@@ -502,10 +711,502 @@ def trade_history():
 
     return render_template('trade_history.html', history=history, user_id=user_id)
 
+@app.route('/trade/<int:trade_id>/arrangement', methods=['GET', 'POST'])
+def trade_arrangement(trade_id):
+    """View and update trade arrangement details"""
+    if 'user_id' not in session:
+        flash('Please login first.', 'warning')
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+
+        # Get trade details
+        trade = conn.execute("""
+            SELECT t.*, 
+                   oi.item_Name as offer_item_name,
+                   ti.item_Name as target_item_name,
+                   offer_user.username as offer_username,
+                   offer_user.full_name as offer_full_name,
+                   target_user.username as target_username,
+                   target_user.full_name as target_full_name
+            FROM trades t
+            JOIN items oi ON t.offer_item_id = oi.items_id
+            JOIN items ti ON t.target_item_id = ti.items_id
+            JOIN users offer_user ON t.offer_user_id = offer_user.id
+            JOIN users target_user ON t.target_user_id = target_user.id
+            WHERE t.trade_id = ? AND (t.offer_user_id = ? OR t.target_user_id = ?)
+        """, (trade_id, user_id, user_id)).fetchone()
+
+        if not trade:
+            flash('Trade not found.', 'error')
+            return redirect(url_for('view_trade_requests'))
+
+        # Get arrangement details
+        arrangement = conn.execute(
+            "SELECT * FROM trade_arrangements WHERE trade_id = ?",
+            (trade_id,)
+        ).fetchone()
+
+        # Get negotiation messages
+        messages = conn.execute("""
+            SELECT tm.*, u.username, u.full_name
+            FROM trade_messages_negotiation tm
+            JOIN users u ON tm.user_id = u.id
+            WHERE tm.trade_id = ?
+            ORDER BY tm.created_at ASC
+        """, (trade_id,)).fetchall()
+
+    if request.method == 'POST':
+        method = request.form.get('method')
+        meetup_location = request.form.get('meetup_location')
+        meetup_date = request.form.get('meetup_date')
+        meetup_time = request.form.get('meetup_time')
+        delivery_address = request.form.get('delivery_address')
+        delivery_date = request.form.get('delivery_date')
+        courier_option = request.form.get('courier_option')
+        delivery_instructions = request.form.get('delivery_instructions')
+
+        with sqlite3.connect(DB_NAME) as conn:
+            if not arrangement:
+                # Create new arrangement
+                conn.execute("""
+                    INSERT INTO trade_arrangements 
+                    (trade_id, initiator_id, method, meetup_location, meetup_date, meetup_time, 
+                     delivery_address, delivery_date, courier_option, delivery_instructions)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (trade_id, user_id, method, meetup_location, meetup_date, meetup_time,
+                      delivery_address, delivery_date, courier_option, delivery_instructions))
+            else:
+                # Update existing arrangement
+                conn.execute("""
+                    UPDATE trade_arrangements 
+                    SET method = ?, meetup_location = ?, meetup_date = ?, meetup_time = ?,
+                        delivery_address = ?, delivery_date = ?, courier_option = ?, 
+                        delivery_instructions = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE trade_id = ?
+                """, (method, meetup_location, meetup_date, meetup_time,
+                      delivery_address, delivery_date, courier_option,
+                      delivery_instructions, trade_id))
+
+            flash('Arrangement details saved successfully!', 'success')
+            return redirect(url_for('trade_arrangement', trade_id=trade_id))
+
+    return render_template('arrangement_details.html',
+                           trade=trade,
+                           arrangement=arrangement,
+                           messages=messages,
+                           user_id=user_id)
+
+@app.route('/trade/<int:trade_id>/cancel', methods=['POST'])
+def cancel_trade_arrangement(trade_id):
+    """Cancel trade from arrangement page"""
+    if 'user_id' not in session:
+        return jsonify({'status': 'error', 'message': 'Please login first'})
+
+    user_id = session['user_id']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        # Verify user is part of this trade
+        trade = conn.execute(
+            "SELECT * FROM trades WHERE trade_id = ? AND (offer_user_id = ? OR target_user_id = ?)",
+            (trade_id, user_id, user_id)
+        ).fetchone()
+
+        if not trade:
+            return jsonify({'status': 'error', 'message': 'Trade not found'})
+
+        # Cancel the trade
+        conn.execute(
+            "UPDATE trades SET trade_status = 'cancelled' WHERE trade_id = ?",
+            (trade_id,)
+        )
+
+        # Also update arrangement status if exists
+        arrangement = conn.execute(
+            "SELECT * FROM trade_arrangements WHERE trade_id = ?",
+            (trade_id,)
+        ).fetchone()
+
+        if arrangement:
+            conn.execute(
+                "UPDATE trade_arrangements SET status = 'cancelled' WHERE trade_id = ?",
+                (trade_id,)
+            )
+
+        return jsonify({'status': 'success', 'message': 'Trade cancelled successfully'})
+
+@app.route('/set_meetup_details/<int:trade_id>', methods=['POST'])
+def set_meetup_details(trade_id):
+    """Set or suggest meetup details"""
+    if 'user_id' not in session:
+        flash('Please login first.', 'warning')
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    action = request.form['action']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        # Verify user is part of this trade
+        trade = conn.execute(
+            "SELECT * FROM trades WHERE trade_id = ? AND (offer_user_id = ? OR target_user_id = ?)",
+            (trade_id, user_id, user_id)
+        ).fetchone()
+
+        if not trade:
+            flash('Trade not found.', 'error')
+            return redirect(url_for('trade_history'))
+
+        if action == 'suggest':
+            # Update meetup details
+            conn.execute("""
+                UPDATE trades SET 
+                meetup_location = ?, meetup_date = ?, meetup_time = ?, meetup_gps = ?,
+                meetup_preferred = 1, meetup_confirmed = 0
+                WHERE trade_id = ?
+            """, (
+                request.form['meetup_location'],
+                request.form.get('meetup_date'),
+                request.form.get('meetup_time'),
+                request.form.get('meetup_gps'),
+                trade_id
+            ))
+            flash('Meetup details suggested! Waiting for other user to agree.', 'success')
+
+        elif action == 'agree':
+            # Agree to meetup details
+            conn.execute(
+                "UPDATE trades SET meetup_confirmed = 1 WHERE trade_id = ?",
+                (trade_id,)
+            )
+            flash('You have agreed to the meetup arrangement!', 'success')
+
+    return redirect(url_for('trade_history'))
+
+
+@app.route('/set_delivery_details/<int:trade_id>', methods=['POST'])
+def set_delivery_details(trade_id):
+    """Set or suggest delivery details"""
+    if 'user_id' not in session:
+        flash('Please login first.', 'warning')
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    action = request.form['action']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        # Verify user is part of this trade
+        trade = conn.execute(
+            "SELECT * FROM trades WHERE trade_id = ? AND (offer_user_id = ? OR target_user_id = ?)",
+            (trade_id, user_id, user_id)
+        ).fetchone()
+
+        if not trade:
+            flash('Trade not found.', 'error')
+            return redirect(url_for('trade_history'))
+
+        if action == 'suggest':
+            # Update delivery details
+            conn.execute("""
+                UPDATE trades SET 
+                delivery_location = ?, delivery_date = ?, delivery_courier = ?, tracking_number = ?,
+                delivery_preferred = 1, delivery_confirmed = 0
+                WHERE trade_id = ?
+            """, (
+                request.form['delivery_location'],
+                request.form.get('delivery_date'),
+                request.form.get('delivery_courier'),
+                request.form.get('tracking_number'),
+                trade_id
+            ))
+            flash('Delivery details suggested! Waiting for other user to agree.', 'success')
+
+        elif action == 'agree':
+            # Agree to delivery details
+            conn.execute(
+                "UPDATE trades SET delivery_confirmed = 1 WHERE trade_id = ?",
+                (trade_id,)
+            )
+            flash('You have agreed to the delivery arrangement!', 'success')
+
+    return redirect(url_for('trade_history'))
+
+
+@app.route('/trade/<int:trade_id>/save_draft', methods=['POST'])
+def save_arrangement_draft(trade_id):
+    """Auto-save arrangement draft"""
+    if 'user_id' not in session:
+        return jsonify({'status': 'error', 'message': 'Please login first'})
+
+    user_id = session['user_id']
+
+    # Similar to main arrangement route but without flash messages
+    # ... implementation similar to trade_arrangement POST method ...
+
+    return jsonify({'status': 'success', 'message': 'Draft saved'})
+
+@app.route('/trade/<int:trade_id>/suggest_location', methods=['POST'])
+def suggest_location(trade_id):
+    """Suggest a location for trade arrangement"""
+    if 'user_id' not in session:
+        return jsonify({'status': 'error', 'message': 'Please login first'})
+
+    user_id = session['user_id']
+    data = request.json
+    location = data.get('location')
+
+    with sqlite3.connect(DB_NAME) as conn:
+        # Verify user is part of this trade
+        trade = conn.execute(
+            "SELECT * FROM trades WHERE trade_id = ? AND (offer_user_id = ? OR target_user_id = ?)",
+            (trade_id, user_id, user_id)
+        ).fetchone()
+
+        if not trade:
+            return jsonify({'status': 'error', 'message': 'Trade not found'})
+
+        # Create suggestion message
+        conn.execute("""
+            INSERT INTO trade_messages_negotiation (trade_id, user_id, message_type, content, suggested_location)
+            VALUES (?, ?, 'location_suggestion', ?, ?)
+        """, (trade_id, user_id, f"Suggested location: {location}", location))
+
+        return jsonify({'status': 'success', 'message': 'Location suggestion sent'})
+
+@app.route('/trade/<int:trade_id>/send_message', methods=['POST'])
+def send_negotiation_message(trade_id):
+    """Send negotiation message"""
+    if 'user_id' not in session:
+        return jsonify({'status': 'error', 'message': 'Please login first'})
+
+    user_id = session['user_id']
+    message_text = request.json.get('message')
+
+    with sqlite3.connect(DB_NAME) as conn:
+        # Verify user is part of this trade
+        trade = conn.execute(
+            "SELECT * FROM trades WHERE trade_id = ? AND (offer_user_id = ? OR target_user_id = ?)",
+            (trade_id, user_id, user_id)
+        ).fetchone()
+
+        if not trade:
+            return jsonify({'status': 'error', 'message': 'Trade not found'})
+
+        # Save message
+        conn.execute("""
+            INSERT INTO trade_messages_negotiation (trade_id, user_id, message_type, content)
+            VALUES (?, ?, 'text', ?)
+        """, (trade_id, user_id, message_text))
+
+        return jsonify({'status': 'success', 'message': 'Message sent'})
+
+@app.route('/trade/<int:trade_id>/mark_received', methods=['POST'])
+def mark_item_received_unified(trade_id):
+    """Mark item as received in unified system"""
+    if 'user_id' not in session:
+        return jsonify({'status': 'error', 'message': 'Please login first'})
+
+    user_id = session['user_id']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        # Verify user is part of this trade and get arrangement
+        arrangement = conn.execute("""
+            SELECT ta.*, t.offer_user_id, t.target_user_id 
+            FROM trade_arrangements ta
+            JOIN trades t ON ta.trade_id = t.trade_id
+            WHERE ta.trade_id = ? AND (t.offer_user_id = ? OR t.target_user_id = ?)
+        """, (trade_id, user_id, user_id)).fetchone()
+
+        if not arrangement:
+            return jsonify({'status': 'error', 'message': 'Arrangement not found'})
+
+        # Determine which user is marking received
+        if user_id == arrangement['offer_user_id']:
+            conn.execute(
+                "UPDATE trade_arrangements SET user1_confirmed_receipt = 1 WHERE trade_id = ?",
+                (trade_id,)
+            )
+        else:
+            conn.execute(
+                "UPDATE trade_arrangements SET user2_confirmed_receipt = 1 WHERE trade_id = ?",
+                (trade_id,)
+            )
+
+        # Check if both received
+        updated_arrangement = conn.execute(
+            "SELECT user1_confirmed_receipt, user2_confirmed_receipt FROM trade_arrangements WHERE trade_id = ?",
+            (trade_id,)
+        ).fetchone()
+
+        if updated_arrangement['user1_confirmed_receipt'] and updated_arrangement['user2_confirmed_receipt']:
+            conn.execute(
+                "UPDATE trade_arrangements SET status = 'completed' WHERE trade_id = ?",
+                (trade_id,)
+            )
+            # Also update the main trade status
+            conn.execute(
+                "UPDATE trades SET trade_status = 'completed', offer_received = 1, target_received = 1 WHERE trade_id = ?",
+                (trade_id,)
+            )
+            return jsonify({'status': 'completed', 'message': 'Both items received! Trade completed.'})
+        else:
+            return jsonify({'status': 'waiting', 'message': 'Waiting for other user to confirm receipt.'})
+
+@app.route('/trade/<int:trade_id>/status')
+def get_trade_status(trade_id):
+    """Check if trade status has changed"""
+    if 'user_id' not in session:
+        return jsonify({'status': 'error'})
+
+    user_id = session['user_id']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        arrangement = conn.execute(
+            "SELECT status, user1_confirmed_details, user2_confirmed_details FROM trade_arrangements WHERE trade_id = ?",
+            (trade_id,)
+        ).fetchone()
+
+        # You might want to compare with previous state
+        return jsonify({
+            'status_changed': True,  # Implement proper comparison logic
+            'current_status': arrangement['status'] if arrangement else 'pending'
+        })
+
+@app.route('/cancel_trade/<int:trade_id>', methods=['POST'])
+def cancel_trade(trade_id):
+    """Cancel a trade"""
+    if 'user_id' not in session:
+        flash('Please login first.', 'warning')
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    reason = request.form.get('cancellation_reason', '')
+
+    with sqlite3.connect(DB_NAME) as conn:
+        # Verify user is part of this trade
+        trade = conn.execute(
+            "SELECT * FROM trades WHERE trade_id = ? AND (offer_user_id = ? OR target_user_id = ?)",
+            (trade_id, user_id, user_id)
+        ).fetchone()
+
+        if not trade:
+            flash('Trade not found.', 'error')
+            return redirect(url_for('trade_history'))
+
+        # Cancel the trade
+        conn.execute(
+            "UPDATE trades SET trade_status = 'cancelled', cancellation_reason = ? WHERE trade_id = ?",
+            (reason, trade_id)
+        )
+
+        flash('Trade has been cancelled.', 'info')
+
+    return redirect(url_for('trade_history'))
+
+
+@app.route('/trade/<int:trade_id>/confirm_details', methods=['POST'])
+def confirm_arrangement_details(trade_id):
+    """Confirm arrangement details - FIXED VERSION"""
+    if 'user_id' not in session:
+        return jsonify({'status': 'error', 'message': 'Please login first'})
+
+    user_id = session['user_id']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+
+        # Verify user is part of this trade and get arrangement
+        arrangement = conn.execute("""
+            SELECT ta.*, t.offer_user_id, t.target_user_id 
+            FROM trade_arrangements ta
+            JOIN trades t ON ta.trade_id = t.trade_id
+            WHERE ta.trade_id = ? AND (t.offer_user_id = ? OR t.target_user_id = ?)
+        """, (trade_id, user_id, user_id)).fetchone()
+
+        if not arrangement:
+            return jsonify({'status': 'error', 'message': 'Arrangement not found'})
+
+        # Determine which user is confirming
+        if user_id == arrangement['offer_user_id']:
+            conn.execute(
+                "UPDATE trade_arrangements SET user1_confirmed_details = 1 WHERE trade_id = ?",
+                (trade_id,)
+            )
+            user_type = 'user1'
+        else:
+            conn.execute(
+                "UPDATE trade_arrangements SET user2_confirmed_details = 1 WHERE trade_id = ?",
+                (trade_id,)
+            )
+            user_type = 'user2'
+
+        # Check if both confirmed
+        updated_arrangement = conn.execute(
+            "SELECT user1_confirmed_details, user2_confirmed_details FROM trade_arrangements WHERE trade_id = ?",
+            (trade_id,)
+        ).fetchone()
+
+        if updated_arrangement['user1_confirmed_details'] and updated_arrangement['user2_confirmed_details']:
+            # Both users confirmed - update status to accepted
+            conn.execute(
+                "UPDATE trade_arrangements SET status = 'accepted' WHERE trade_id = ?",
+                (trade_id,)
+            )
+            # Also update the main trade status
+            conn.execute(
+                "UPDATE trades SET trade_status = 'accepted' WHERE trade_id = ?",
+                (trade_id,)
+            )
+            arrangement_status = 'accepted'
+            message = 'Both users have confirmed! Trade is now accepted.'
+        else:
+            arrangement_status = 'pending'
+            message = 'Your confirmation has been recorded. Waiting for other user.'
+
+        conn.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': message,
+            'arrangement_status': arrangement_status,
+            'user_confirmed': user_type
+        })
+
+@app.route('/confirm_meetup_location/<int:trade_id>')
+def confirm_meetup_location(trade_id):
+    """Confirm meet-up location"""
+    if 'user_id' not in session:
+        flash('Please login first.', 'warning')
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        # Verify user can confirm (should be the other party)
+        trade = conn.execute(
+            "SELECT * FROM trades WHERE trade_id = ? AND offer_user_id = ?",
+            (trade_id, user_id)
+        ).fetchone()
+
+        if not trade:
+            flash('You cannot confirm this location.', 'error')
+            return redirect(url_for('trade_history'))
+
+        conn.execute(
+            "UPDATE trades SET meetup_confirmed = 1 WHERE trade_id = ?",
+            (trade_id,)
+        )
+
+        flash('Meet-up location confirmed!', 'success')
+
+    return redirect(url_for('trade_history'))
 
 @app.route('/mark_item_received/<int:trade_id>', methods=['POST'])
 def mark_item_received(trade_id):
-    """Mark item as received by user"""
+    """Mark item as received from trade history"""
     if 'user_id' not in session:
         flash('Please login first.', 'warning')
         return redirect(url_for('login'))
@@ -549,9 +1250,120 @@ def mark_item_received(trade_id):
                 "UPDATE trades SET trade_status = 'completed' WHERE trade_id = ?",
                 (trade_id,)
             )
+            # Also update arrangement status if exists
+            conn.execute(
+                "UPDATE trade_arrangements SET status = 'completed' WHERE trade_id = ?",
+                (trade_id,)
+            )
             flash('Trade completed! Both traders have received their items.', 'success')
 
     return redirect(url_for('trade_history'))
+
+@app.route('/trade/<int:trade_id>/confirm_receipt', methods=['POST'])
+def confirm_item_receipt(trade_id):
+    """Mark item as received in unified system - DEBUG VERSION"""
+    print(f"DEBUG: confirm_receipt called for trade {trade_id}")
+
+    if 'user_id' not in session:
+        print("DEBUG: User not logged in")
+        return jsonify({'status': 'error', 'message': 'Please login first'})
+
+    user_id = session['user_id']
+    print(f"DEBUG: User ID: {user_id}")
+
+    # Get JSON data properly
+    if request.is_json:
+        data = request.get_json()
+        tracking_number = data.get('tracking_number', '') if data else ''
+    else:
+        tracking_number = ''
+
+    print(f"DEBUG: Tracking number: {tracking_number}")
+
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            conn.row_factory = sqlite3.Row
+
+            # Verify user is part of this trade and get arrangement
+            arrangement = conn.execute("""
+                SELECT ta.*, t.offer_user_id, t.target_user_id 
+                FROM trade_arrangements ta
+                JOIN trades t ON ta.trade_id = t.trade_id
+                WHERE ta.trade_id = ? AND (t.offer_user_id = ? OR t.target_user_id = ?)
+            """, (trade_id, user_id, user_id)).fetchone()
+
+            if not arrangement:
+                print("DEBUG: Arrangement not found")
+                return jsonify({'status': 'error', 'message': 'Arrangement not found'})
+
+            print(
+                f"DEBUG: Found arrangement - User1: {arrangement['offer_user_id']}, User2: {arrangement['target_user_id']}")
+
+            # Determine which user is marking received
+            if user_id == arrangement['offer_user_id']:
+                print("DEBUG: User is offer_user - marking user1_confirmed_receipt")
+                conn.execute(
+                    "UPDATE trade_arrangements SET user1_confirmed_receipt = 1 WHERE trade_id = ?",
+                    (trade_id,)
+                )
+                # Also update the trades table
+                conn.execute(
+                    "UPDATE trades SET offer_received = 1 WHERE trade_id = ?",
+                    (trade_id,)
+                )
+                user_role = "offer user"
+            else:
+                print("DEBUG: User is target_user - marking user2_confirmed_receipt")
+                conn.execute(
+                    "UPDATE trade_arrangements SET user2_confirmed_receipt = 1 WHERE trade_id = ?",
+                    (trade_id,)
+                )
+                # Also update the trades table
+                conn.execute(
+                    "UPDATE trades SET target_received = 1 WHERE trade_id = ?",
+                    (trade_id,)
+                )
+                user_role = "target user"
+
+            # Update tracking number if provided
+            if tracking_number:
+                print(f"DEBUG: Updating tracking number: {tracking_number}")
+                conn.execute(
+                    "UPDATE trade_arrangements SET tracking_number = ? WHERE trade_id = ?",
+                    (tracking_number, trade_id)
+                )
+
+            # Check if both received
+            updated_arrangement = conn.execute(
+                "SELECT user1_confirmed_receipt, user2_confirmed_receipt FROM trade_arrangements WHERE trade_id = ?",
+                (trade_id,)
+            ).fetchone()
+
+            print(
+                f"DEBUG: After update - User1 received: {updated_arrangement['user1_confirmed_receipt']}, User2 received: {updated_arrangement['user2_confirmed_receipt']}")
+
+            if updated_arrangement['user1_confirmed_receipt'] and updated_arrangement['user2_confirmed_receipt']:
+                print("DEBUG: Both users confirmed receipt - marking as completed")
+                conn.execute(
+                    "UPDATE trade_arrangements SET status = 'completed' WHERE trade_id = ?",
+                    (trade_id,)
+                )
+                # Also update the main trade status
+                conn.execute(
+                    "UPDATE trades SET trade_status = 'completed' WHERE trade_id = ?",
+                    (trade_id,)
+                )
+                conn.commit()
+                return jsonify(
+                    {'status': 'completed', 'message': '🎉 Both items received! Trade completed successfully.'})
+            else:
+                conn.commit()
+                return jsonify({'status': 'waiting',
+                                'message': f'✅ You marked your item as received! Waiting for other user to confirm.'})
+
+    except Exception as e:
+        print(f"DEBUG: Error occurred: {str(e)}")
+        return jsonify({'status': 'error', 'message': f'Database error: {str(e)}'})
 
 @app.route('/send_message', methods=['GET', 'POST'])
 def send_message():
@@ -804,8 +1616,11 @@ def change_password():
     flash('Password changed successfully!', 'success')
     return redirect(url_for('profile'))
 
+
+
 # =====================
 # RUN APP
 # =====================
 if __name__ == '__main__':
+    migrate_database()
     app.run(debug=True)

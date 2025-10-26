@@ -5,9 +5,9 @@
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h2 style="color:#0d47a1; margin: 0;">Item Details</h2>
-      <button onclick="window.history.back()" class="btn-primary" style="background: #546e7a; border: none; border-radius: 8px; color: white; padding: 10px 20px; cursor: pointer; font-weight: bold;">
-        ← Back
-      </button>
+      <a href="{{ url_for('view_trade_requests') }}" class="btn-primary" style="background: #546e7a; border: none; border-radius: 8px; color: white; padding: 10px 20px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-block;">
+        ← Back to Trade Requests
+      </a>
     </div>
 
     {% if item %}
@@ -15,7 +15,7 @@
       <!-- Item Image -->
       <div class="item-image-section">
         {% if item['item_image'] %}
-        <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}" 
+        <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}"
              onerror="this.src='https://via.placeholder.com/400x300/0d47a1/ffffff?text=No+Image'">
         {% else %}
         <img src="https://via.placeholder.com/400x300/0d47a1/ffffff?text=No+Image" alt="{{ item['item_Name'] }}">
@@ -300,31 +300,31 @@
   .item-image-section {
     height: 300px;
   }
-  
+
   .detail-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .detail-item {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .detail-value {
     text-align: left;
     margin-left: 0;
     margin-top: 5px;
   }
-  
+
   .action-buttons {
     flex-direction: column;
   }
-  
+
   .owner-section {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .owner-details {
     text-align: center;
   }
@@ -334,9 +334,21 @@
   .item-info-section {
     padding: 20px;
   }
-  
+
   .item-image-section {
     height: 250px;
+  }
+
+  /* Stack header on mobile */
+  .overlay > div:first-child {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .overlay > div:first-child a {
+    width: 100%;
+    text-align: center;
   }
 }
 </style>
