@@ -27,15 +27,15 @@
         <div class="overlay">
             <h1>No buy. No sell. Just Exchange.</h1>
 
-            <!-- In your homepage.html, make sure the search form looks like this -->
-<form class="search-box" action="{{ url_for('search_items') }}" method="get">
-    <input type="text" name="q" placeholder="Search items, brands, traders..." required>
-    <button type="submit" class="search-btn">Search</button>
-</form>
+            <!-- Search Form -->
+            <form class="search-box" action="{{ url_for('search_items') }}" method="get">
+                <input type="text" name="q" placeholder="Search items, brands, traders..." required>
+                <button type="submit" class="search-btn">Search</button>
+            </form>
 
             <div class="action-buttons">
-                <button class="want">I Want</button>
-                <button class="give">I Give</button><br>
+                <button class="want" onclick="goToIWant()">I Want</button>
+                <button class="give" onclick="goToIGive()">I Give</button><br>
                 {% if not session.user_id %}
                     <button class="register" onclick="window.location.href='{{ url_for('register') }}'">Register</button>
                     <button class="login" onclick="window.location.href='{{ url_for('login') }}'">Login</button>
@@ -46,7 +46,163 @@
 
     <!-- ===== Footer ===== -->
     <footer>
-        <p>© 2025 BarterZone. All rights reserved.</p>
+        <p>© 2025 BarterZone. Trade without money. All rights reserved.</p>
     </footer>
+
+    <script>
+        function goToIWant() {
+            // Check if user is logged in
+            {% if session.user_id %}
+                window.location.href = "{{ url_for('other_traders_items') }}";
+            {% else %}
+                // If not logged in, redirect to login page with a message
+                window.location.href = "{{ url_for('login') }}";
+            {% endif %}
+        }
+
+        function goToIGive() {
+            // Check if user is logged in
+            {% if session.user_id %}
+                window.location.href = "{{ url_for('dashboard') }}";
+            {% else %}
+                // If not logged in, redirect to login page with a message
+                window.location.href = "{{ url_for('login') }}";
+            {% endif %}
+        }
+
+        // Optional: Add hover effects and better styling
+        document.addEventListener('DOMContentLoaded', function() {
+            const wantButton = document.querySelector('.want');
+            const giveButton = document.querySelector('.give');
+
+            if (wantButton) {
+                wantButton.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-3px)';
+                    this.style.boxShadow = '0 6px 20px rgba(233, 30, 99, 0.3)';
+                });
+                wantButton.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = 'none';
+                });
+            }
+
+            if (giveButton) {
+                giveButton.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-3px)';
+                    this.style.boxShadow = '0 6px 20px rgba(84, 110, 122, 0.3)';
+                });
+                giveButton.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = 'none';
+                });
+            }
+        });
+    </script>
+
+    <style>
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .want, .give, .register, .login {
+            border: none;
+            border-radius: 25px;
+            padding: 15px 30px;
+            margin: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 18px;
+            min-width: 150px;
+        }
+
+        .want {
+            background: linear-gradient(135deg, #e91e63 0%, #ad1457 100%);
+            color: white;
+        }
+
+        .give {
+            background: linear-gradient(135deg, #546e7a 0%, #37474f 100%);
+            color: white;
+        }
+
+        .register {
+            background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+            color: #0d47a1;
+            border: 2px solid #0d47a1;
+        }
+
+        .login {
+            background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+            color: white;
+        }
+
+        .want:hover, .give:hover, .register:hover, .login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        .search-box {
+            display: flex;
+            justify-content: center;
+            margin: 25px 0;
+        }
+
+        .search-box input {
+            padding: 15px 20px;
+            width: 60%;
+            border: none;
+            border-radius: 25px 0 0 25px;
+            outline: none;
+            font-size: 16px;
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+            border: none;
+            border-radius: 0 25px 25px 0;
+            padding: 15px 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .search-btn:hover {
+            background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .want, .give, .register, .login {
+                width: 200px;
+            }
+
+            .search-box input {
+                width: 70%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .search-box input {
+                width: 60%;
+            }
+
+            .search-btn {
+                padding: 15px 20px;
+            }
+        }
+    </style>
 </body>
 </html>

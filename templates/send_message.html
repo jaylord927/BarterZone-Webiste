@@ -1,55 +1,100 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="hero-section">
-  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 800px; width:100%; padding:20px; border-radius:10px;">
-    
-    <h2 style="color:#0d47a1; margin-bottom:20px;">Send Message to Another Trader</h2>
-    
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 800px; width:100%; padding:30px; border-radius:12px; box-shadow: 0 8px 25px rgba(13, 71, 161, 0.1);">
+
+    <div style="text-align: center; margin-bottom: 30px;">
+      <h2 style="color:#0d47a1; margin-bottom:10px; font-size: 28px;">Send Message</h2>
+      <p style="color:#666; font-size: 16px;">Connect with other traders to discuss trades</p>
+    </div>
+
     {% if traders %}
-    <div style="margin-bottom: 30px;">
-      <h3 style="color:#546e7a; margin-bottom:15px;">Available Traders</h3>
-      <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; padding: 10px;">
+    <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 25px; border-radius: 12px; margin-bottom: 25px; border-left: 5px solid #0d47a1;">
+      <h3 style="color:#0d47a1; margin-top:0; margin-bottom:20px; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 24px;">👥</span>
+        Available Traders
+      </h3>
+
+      <div style="max-height: 350px; overflow-y: auto; padding-right: 10px;">
         {% for trader in traders %}
-        <div class="trader-card" style="border: 1px solid #eee; padding: 15px; margin-bottom: 10px; border-radius: 5px; cursor: pointer;"
-             onclick="selectTrader({{ trader['id'] }}, '{{ trader['full_name'] or trader['username'] }}')">
-          <h4 style="margin: 0 0 5px 0; color:#0d47a1;">{{ trader['full_name'] or trader['username'] }}</h4>
-          <p style="margin: 2px 0; color:#666;">Username: {{ trader['username'] }}</p>
-          {% if trader['location'] %}
-          <p style="margin: 2px 0; color:#666;">Location: {{ trader['location'] }}</p>
-          {% endif %}
-          {% if trader['contact'] %}
-          <p style="margin: 2px 0; color:#666;">Contact: {{ trader['contact'] }}</p>
-          {% endif %}
+        <div class="trader-card"
+             onclick="selectTrader({{ trader['id'] }}, '{{ trader['full_name'] or trader['username'] }}')"
+             style="background: white; border: 2px solid #e0e0e0; padding: 20px; margin-bottom: 15px; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 15px;">
+
+          <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px;">
+            {{ (trader['full_name'] or trader['username'])|first|upper }}
+          </div>
+
+          <div style="flex: 1;">
+            <h4 style="margin: 0 0 8px 0; color:#0d47a1; font-size: 18px;">{{ trader['full_name'] or trader['username'] }}</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+              <p style="margin: 2px 0; color:#666; font-size: 14px;">
+                <strong>Username:</strong> @{{ trader['username'] }}
+              </p>
+              {% if trader['location'] %}
+              <p style="margin: 2px 0; color:#666; font-size: 14px;">
+                <strong>📍 Location:</strong> {{ trader['location'] }}
+              </p>
+              {% endif %}
+              {% if trader['contact'] %}
+              <p style="margin: 2px 0; color:#666; font-size: 14px;">
+                <strong>📞 Contact:</strong> {{ trader['contact'] }}
+              </p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div style="color: #0d47a1; font-size: 20px;">→</div>
         </div>
         {% endfor %}
       </div>
     </div>
 
-    <div id="messageForm" style="display: none;">
-      <h3 style="color:#546e7a; margin-bottom:15px;">Send Message to <span id="selectedTraderName"></span></h3>
+    <div id="messageForm" style="display: none; background: white; padding: 25px; border-radius: 12px; border: 2px solid #0d47a1; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+      <h3 style="color:#0d47a1; margin-top:0; margin-bottom:20px; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 24px;">💬</span>
+        Send Message to <span id="selectedTraderName" style="color: #1976d2;"></span>
+      </h3>
+
       <form method="POST" action="{{ url_for('send_message') }}">
         <input type="hidden" name="receiver_id" id="receiver_id">
-        
-        <div style="margin-bottom: 15px;">
-          <textarea name="message_text" id="message_text" 
-                    placeholder="Type your message here..." 
-                    style="width: 100%; height: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical;"
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color:#0d47a1; font-size: 16px;">Your Message</label>
+          <textarea name="message_text" id="message_text"
+                    placeholder="Type your message here... Be clear about what you want to trade or discuss."
+                    style="width: 100%; height: 150px; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;"
                     required></textarea>
         </div>
-        
-        <div style="display: flex; gap: 10px;">
-          <button type="submit" class="btn-primary">Send Message</button>
-          <button type="button" onclick="cancelMessage()" class="btn-primary" style="background-color: #546e7a;">Cancel</button>
+
+        <div style="display: flex; gap: 15px;">
+          <button type="submit" class="btn-primary" style="flex: 1; padding: 15px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
+            📤 Send Message
+          </button>
+          <button type="button" onclick="cancelMessage()" class="btn-primary" style="flex: 1; padding: 15px; background: #546e7a; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
+            ❌ Cancel
+          </button>
         </div>
       </form>
     </div>
-    
+
     {% else %}
-      <p>No other traders available to message at the moment.</p>
+    <div style="text-align: center; padding: 50px 30px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; border: 2px dashed #0d47a1;">
+      <div style="font-size: 64px; margin-bottom: 20px;">👥</div>
+      <h3 style="color:#666; margin-bottom:15px;">No Other Traders Available</h3>
+      <p style="color:#999; margin-bottom:25px; max-width: 400px; margin-left: auto; margin-right: auto;">
+        There are no other traders registered in the system yet.
+      </p>
+    </div>
     {% endif %}
-    
-    <div style="margin-top: 20px;">
-      <a href="{{ url_for('view_messages') }}" class="btn-primary" style="background-color: #546e7a;">View My Messages</a>
+
+    <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+      <a href="{{ url_for('view_messages') }}" class="btn-primary" style="padding: 12px 25px; background: linear-gradient(135deg, #546e7a 0%, #78909c 100%); border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: all 0.3s ease; text-decoration: none;">
+        📨 View My Messages
+      </a>
+      <a href="{{ url_for('dashboard') }}" class="btn-primary" style="padding: 12px 25px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: all 0.3s ease; text-decoration: none;">
+        🏠 Back to Dashboard
+      </a>
     </div>
 
   </div>
@@ -60,10 +105,10 @@ function selectTrader(traderId, traderName) {
     document.getElementById('receiver_id').value = traderId;
     document.getElementById('selectedTraderName').textContent = traderName;
     document.getElementById('messageForm').style.display = 'block';
-    
+
     // Scroll to message form
     document.getElementById('messageForm').scrollIntoView({ behavior: 'smooth' });
-    
+
     // Focus on message textarea
     document.getElementById('message_text').focus();
 }
@@ -73,12 +118,39 @@ function cancelMessage() {
     document.getElementById('receiver_id').value = '';
     document.getElementById('message_text').value = '';
 }
+
+// Add hover effects
+document.addEventListener('DOMContentLoaded', function() {
+    const traderCards = document.querySelectorAll('.trader-card');
+    traderCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px)';
+            this.style.boxShadow = '0 6px 20px rgba(13, 71, 161, 0.15)';
+            this.style.borderColor = '#0d47a1';
+        });
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+            this.style.borderColor = '#e0e0e0';
+        });
+    });
+});
 </script>
 
 <style>
 .trader-card:hover {
-    background-color: #f5f5f5;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e3f2fd 100%) !important;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+textarea:focus {
     border-color: #0d47a1 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.1);
 }
 </style>
 {% endblock %}

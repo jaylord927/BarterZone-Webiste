@@ -11,15 +11,21 @@
     <div class="items-grid">
         {% for item in items %}
         <div class="item-card">
-            <!-- Item Image -->
             <div class="item-image">
-                {% if item['item_image'] %}
-                <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}" onerror="this.src='https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image'">
-                {% else %}
-                <img src="https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image" alt="{{ item['item_Name'] }}">
-                {% endif %}
-                <div class="item-condition">{{ item['item_Condition'] or 'Good' }}</div>
-            </div>
+    {% if item['item_image'] %}
+    <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}" onerror="this.src='https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image'">
+    {% else %}
+    <img src="https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image" alt="{{ item['item_Name'] }}">
+    {% endif %}
+
+    {% if item['item_available'] == 0 %}
+    <div class="item-unavailable" style="position: absolute; top: 12px; left: 12px; background: rgba(244, 67, 54, 0.95); color: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: uppercase; z-index: 10;">
+        ❌ Unavailable
+    </div>
+    {% endif %}
+
+    <div class="item-condition">{{ item['item_Condition'] or 'Good' }}</div>
+</div>
 
             <!-- Item Details -->
             <div class="item-details">

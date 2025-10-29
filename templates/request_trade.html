@@ -3,68 +3,81 @@
 <section class="hero-section">
   <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 1400px; width:100%; padding:20px; border-radius:10px;">
 
-    <h2 style="color:#0d47a1; margin-bottom:20px;">Request Trade</h2>
+    <!-- Debug Info -->
+    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0d47a1;">
+        <h4 style="color:#0d47a1; margin:0 0 10px 0;">📊 Debug Info</h4>
+        <p style="margin:5px 0;"><strong>Other Traders Items Found:</strong> {{ other_items|length }}</p>
+        <p style="margin:5px 0;"><strong>My Items Found:</strong> {{ my_items|length }}</p>
+        <p style="margin:5px 0;"><strong>Logged in as:</strong> {{ session.username }} (ID: {{ session.user_id }})</p>
+    </div>
+
+    <h2 style="color:#0d47a1; margin-bottom:20px; text-align: center;">Request Trade</h2>
 
     <div style="display: flex; gap: 25px; flex-wrap: wrap;">
       <!-- Other Traders' Items -->
       <div style="flex: 1; min-width: 400px;">
         <h3 style="color:#0d47a1; margin-bottom:15px;">Items Available for Trade</h3>
+
         {% if other_items %}
         <div style="max-height: 600px; overflow-y: auto; padding-right: 10px;">
           {% for item in other_items %}
-          <div class="trade-item-card" id="target-{{ item['items_id'] }}">
-            <div class="item-image">
+          <div class="trade-item-card" id="target-{{ item['items_id'] }}" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 20px; overflow: hidden; border: 1px solid #e0e0e0;">
+            <div class="item-image" style="position: relative; height: 180px; overflow: hidden; background: #f8f9fa;">
               {% if item['item_image'] %}
-              <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}" onerror="this.src='https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image'">
+              <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image'">
               {% else %}
-              <img src="https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image" alt="{{ item['item_Name'] }}">
+              <img src="https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image" alt="{{ item['item_Name'] }}" style="width: 100%; height: 100%; object-fit: cover;">
               {% endif %}
-              <div class="item-condition">{{ item['item_Condition'] or 'Good' }}</div>
+
+              <!-- ADD UNVAILABLE BADGE HERE -->
+              {% if item['item_available'] == 0 %}
+              <div class="item-unavailable" style="position: absolute; top: 10px; left: 10px; background: rgba(244, 67, 54, 0.95); color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; z-index: 10;">
+                  ❌ Unavailable
+              </div>
+              {% endif %}
+
+              <div class="item-condition" style="position: absolute; top: 10px; right: 10px; background: rgba(13, 71, 161, 0.9); color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase;">
+                {{ item['item_Condition'] or 'Good' }}
+              </div>
             </div>
 
-            <div class="item-details">
+            <div class="item-details" style="padding: 15px;">
               <!-- Owner Info -->
-              <div class="owner-info">
-                <div class="owner-avatar">
+              <div class="owner-info" style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #f5f5f5;">
+                <div class="owner-avatar" style="width: 35px; height: 35px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
                   {{ (item['full_name'] or item['username'])|first|upper }}
                 </div>
-                <div class="owner-details">
-                  <span class="owner-label">Owner:</span>
-                  <strong class="owner-name">{{ item['full_name'] or item['username'] }}</strong>
+                <div class="owner-details" style="flex: 1;">
+                  <span class="owner-label" style="display: block; font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1px;">Owner:</span>
+                  <strong class="owner-name" style="display: block; font-size: 13px; color: #333; font-weight: 600; margin-bottom: 1px;">{{ item['full_name'] or item['username'] }}</strong>
                   {% if item['location'] %}
-                  <span class="owner-location">📍 {{ item['location'] }}</span>
+                  <span class="owner-location" style="display: block; font-size: 11px; color: #666;">📍 {{ item['location'] }}</span>
                   {% endif %}
                 </div>
               </div>
 
-              <h4 class="item-title">{{ item['item_Name'] }}</h4>
+              <h4 class="item-title" style="font-size: 16px; font-weight: bold; color: #0d47a1; margin: 0 0 12px 0;">{{ item['item_Name'] }}</h4>
 
-              <div class="item-specs">
-                <div class="spec-row">
-                  <span class="spec-label">Brand:</span>
-                  <span class="spec-value">{{ item['item_Brand'] or 'Not specified' }}</span>
+              <div class="item-specs" style="margin-bottom: 12px;">
+                <div class="spec-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding: 4px 0;">
+                  <span class="spec-label" style="font-size: 12px; color: #666; font-weight: 500;">Brand:</span>
+                  <span class="spec-value" style="font-size: 12px; color: #333; font-weight: 500;">{{ item['item_Brand'] or 'Not specified' }}</span>
                 </div>
-                <div class="spec-row">
-                  <span class="spec-label">Condition:</span>
-                  <span class="spec-value condition-badge">{{ item['item_Condition'] or 'Good' }}</span>
-                </div>
-                <div class="spec-row">
-                  <span class="spec-label">Date Bought:</span>
-                  <span class="spec-value">{{ item['item_Date'] or 'Not specified' }}</span>
+                <div class="spec-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding: 4px 0;">
+                  <span class="spec-label" style="font-size: 12px; color: #666; font-weight: 500;">Condition:</span>
+                  <span class="spec-value condition-badge" style="font-size: 12px; color: #333; font-weight: 500; background: #e8f5e8; color: #2e7d32; padding: 3px 6px; border-radius: 10px; font-size: 10px; font-weight: bold;">{{ item['item_Condition'] or 'Good' }}</span>
                 </div>
               </div>
 
-              <div class="description-section">
-                <p class="item-description">{{ item['item_Description'] or 'No description available' }}</p>
-              </div>
-
-              <div class="date-offered">
-                <span class="date-label">Listed:</span>
-                <span class="date-value">Recently</span>
+              <div class="description-section" style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                <p class="item-description" style="color: #555; font-size: 12px; line-height: 1.4; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                  {{ item['item_Description'] or 'No description available' }}
+                </p>
               </div>
 
               <button onclick="selectTargetItem({{ item['items_id'] }}, '{{ item['item_Name']|replace("'", "&#39;") }}', '{{ item['item_image'] or '' }}')"
-                      class="select-btn" data-item-id="{{ item['items_id'] }}">
+                      class="select-btn" data-item-id="{{ item['items_id'] }}"
+                      style="width: 100%; padding: 12px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
                 Select for Trade
               </button>
             </div>
@@ -72,50 +85,66 @@
           {% endfor %}
         </div>
         {% else %}
-          <p>No items available from other traders.</p>
+        <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 10px;">
+          <div style="font-size: 48px; margin-bottom: 15px;">📦</div>
+          <h4 style="color:#666; margin-bottom:10px;">No Items Available</h4>
+          <p style="color:#999; margin-bottom:20px;">
+            There are no items available for trading at the moment.
+          </p>
+        </div>
         {% endif %}
       </div>
 
       <!-- My Items -->
       <div style="flex: 1; min-width: 400px;">
         <h3 style="color:#0d47a1; margin-bottom:15px;">My Items to Offer</h3>
+
         {% if my_items %}
         <div style="max-height: 600px; overflow-y: auto; padding-right: 10px;">
           {% for item in my_items %}
-          <div class="trade-item-card" id="offer-{{ item['items_id'] }}">
-            <div class="item-image">
+          <div class="trade-item-card" id="offer-{{ item['items_id'] }}" style="background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 20px; overflow: hidden; border: 1px solid #e0e0e0;">
+            <div class="item-image" style="position: relative; height: 180px; overflow: hidden; background: #f8f9fa;">
               {% if item['item_image'] %}
-              <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}" onerror="this.src='https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image'">
+              <img src="{{ item['item_image'] }}" alt="{{ item['item_Name'] }}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image'">
               {% else %}
-              <img src="https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image" alt="{{ item['item_Name'] }}">
+              <img src="https://via.placeholder.com/300x200/0d47a1/ffffff?text=No+Image" alt="{{ item['item_Name'] }}" style="width: 100%; height: 100%; object-fit: cover;">
               {% endif %}
-              <div class="item-condition">{{ item['item_Condition'] or 'Good' }}</div>
+
+              <!-- ADD UNVAILABLE BADGE HERE -->
+              {% if item['item_available'] == 0 %}
+              <div class="item-unavailable" style="position: absolute; top: 10px; left: 10px; background: rgba(244, 67, 54, 0.95); color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; z-index: 10;">
+                  ❌ Unavailable
+              </div>
+              {% endif %}
+
+              <div class="item-condition" style="position: absolute; top: 10px; right: 10px; background: rgba(13, 71, 161, 0.9); color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase;">
+                {{ item['item_Condition'] or 'Good' }}
+              </div>
             </div>
 
-            <div class="item-details">
-              <h4 class="item-title">{{ item['item_Name'] }}</h4>
+            <div class="item-details" style="padding: 15px;">
+              <h4 class="item-title" style="font-size: 16px; font-weight: bold; color: #0d47a1; margin: 0 0 12px 0;">{{ item['item_Name'] }}</h4>
 
-              <div class="item-specs">
-                <div class="spec-row">
-                  <span class="spec-label">Brand:</span>
-                  <span class="spec-value">{{ item['item_Brand'] or 'Not specified' }}</span>
+              <div class="item-specs" style="margin-bottom: 12px;">
+                <div class="spec-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding: 4px 0;">
+                  <span class="spec-label" style="font-size: 12px; color: #666; font-weight: 500;">Brand:</span>
+                  <span class="spec-value" style="font-size: 12px; color: #333; font-weight: 500;">{{ item['item_Brand'] or 'Not specified' }}</span>
                 </div>
-                <div class="spec-row">
-                  <span class="spec-label">Condition:</span>
-                  <span class="spec-value condition-badge">{{ item['item_Condition'] or 'Good' }}</span>
-                </div>
-                <div class="spec-row">
-                  <span class="spec-label">Date Bought:</span>
-                  <span class="spec-value">{{ item['item_Date'] or 'Not specified' }}</span>
+                <div class="spec-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding: 4px 0;">
+                  <span class="spec-label" style="font-size: 12px; color: #666; font-weight: 500;">Condition:</span>
+                  <span class="spec-value condition-badge" style="font-size: 12px; color: #333; font-weight: 500; background: #e8f5e8; color: #2e7d32; padding: 3px 6px; border-radius: 10px; font-size: 10px; font-weight: bold;">{{ item['item_Condition'] or 'Good' }}</span>
                 </div>
               </div>
 
-              <div class="description-section">
-                <p class="item-description">{{ item['item_Description'] or 'No description available' }}</p>
+              <div class="description-section" style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                <p class="item-description" style="color: #555; font-size: 12px; line-height: 1.4; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                  {{ item['item_Description'] or 'No description available' }}
+                </p>
               </div>
 
               <button onclick="selectOfferItem({{ item['items_id'] }}, '{{ item['item_Name']|replace("'", "&#39;") }}', '{{ item['item_image'] or '' }}')"
-                      class="select-btn" data-item-id="{{ item['items_id'] }}">
+                      class="select-btn" data-item-id="{{ item['items_id'] }}"
+                      style="width: 100%; padding: 12px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
                 Offer This Item
               </button>
             </div>
@@ -123,7 +152,16 @@
           {% endfor %}
         </div>
         {% else %}
-          <p>You have no items to offer. <a href="{{ url_for('add_item') }}">Add an item first</a>.</p>
+        <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 10px;">
+          <div style="font-size: 48px; margin-bottom: 15px;">📦</div>
+          <h4 style="color:#666; margin-bottom:10px;">No Items to Offer</h4>
+          <p style="color:#999; margin-bottom:20px;">
+            You don't have any available items to offer for trade.
+          </p>
+          <a href="{{ url_for('add_item') }}" class="btn-primary" style="padding: 10px 20px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 6px; text-decoration: none; font-weight: bold;">
+            + Add New Item
+          </a>
+        </div>
         {% endif %}
       </div>
     </div>
@@ -139,9 +177,9 @@
           <!-- You Offer -->
           <div style="flex: 1; text-align: center;">
             <h4 style="color:#0d47a1; margin-bottom:15px;">You Offer:</h4>
-            <div class="selected-item-card" id="selected-offer-item">
-              <div class="selected-item-image" id="offer-item-image"></div>
-              <div class="selected-item-name" id="offer-item-name"></div>
+            <div class="selected-item-card" id="selected-offer-item" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 2px solid #0d47a1;">
+              <div class="selected-item-image" id="offer-item-image" style="width: 100px; height: 100px; margin: 0 auto 10px; border-radius: 8px; overflow: hidden; background: #f8f9fa;"></div>
+              <div class="selected-item-name" id="offer-item-name" style="font-size: 16px; font-weight: bold; color: #0d47a1; text-align: center;"></div>
             </div>
           </div>
 
@@ -155,14 +193,14 @@
           <!-- You Receive -->
           <div style="flex: 1; text-align: center;">
             <h4 style="color:#0d47a1; margin-bottom:15px;">You Receive:</h4>
-            <div class="selected-item-card" id="selected-target-item">
-              <div class="selected-item-image" id="target-item-image"></div>
-              <div class="selected-item-name" id="target-item-name"></div>
+            <div class="selected-item-card" id="selected-target-item" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 2px solid #0d47a1;">
+              <div class="selected-item-image" id="target-item-image" style="width: 100px; height: 100px; margin: 0 auto 10px; border-radius: 8px; overflow: hidden; background: #f8f9fa;"></div>
+              <div class="selected-item-name" id="target-item-name" style="font-size: 16px; font-weight: bold; color: #0d47a1; text-align: center;"></div>
             </div>
           </div>
         </div>
 
-        <button type="submit" class="submit-trade-btn">
+        <button type="submit" class="submit-trade-btn" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
           Send Trade Request
         </button>
       </form>
@@ -170,264 +208,6 @@
 
   </div>
 </section>
-
-<style>
-.trade-item-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
-    overflow: hidden;
-    border: 1px solid #e0e0e0;
-    transition: all 0.3s ease;
-}
-
-.trade-item-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.trade-item-card .item-image {
-    position: relative;
-    height: 180px;
-    overflow: hidden;
-    background: #f8f9fa;
-}
-
-.trade-item-card .item-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.trade-item-card .item-condition {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: rgba(13, 71, 161, 0.9);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 10px;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-.trade-item-card .item-details {
-    padding: 15px;
-}
-
-/* Owner Info */
-.owner-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f5f5f5;
-}
-
-.owner-avatar {
-    width: 35px;
-    height: 35px;
-    background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 14px;
-}
-
-.owner-details {
-    flex: 1;
-}
-
-.owner-label {
-    display: block;
-    font-size: 10px;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 1px;
-}
-
-.owner-name {
-    display: block;
-    font-size: 13px;
-    color: #333;
-    font-weight: 600;
-    margin-bottom: 1px;
-}
-
-.owner-location {
-    display: block;
-    font-size: 11px;
-    color: #666;
-}
-
-.trade-item-card .item-title {
-    font-size: 16px;
-    font-weight: bold;
-    color: #0d47a1;
-    margin: 0 0 12px 0;
-}
-
-.trade-item-card .item-specs {
-    margin-bottom: 12px;
-}
-
-.trade-item-card .spec-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-    padding: 4px 0;
-}
-
-.trade-item-card .spec-label {
-    font-size: 12px;
-    color: #666;
-    font-weight: 500;
-}
-
-.trade-item-card .spec-value {
-    font-size: 12px;
-    color: #333;
-    font-weight: 500;
-}
-
-.condition-badge {
-    background: #e8f5e8;
-    color: #2e7d32;
-    padding: 3px 6px;
-    border-radius: 10px;
-    font-size: 10px;
-    font-weight: bold;
-}
-
-.trade-item-card .description-section {
-    margin-bottom: 12px;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 6px;
-}
-
-.trade-item-card .item-description {
-    color: #555;
-    font-size: 12px;
-    line-height: 1.4;
-    margin: 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.trade-item-card .date-offered {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding: 8px 0;
-    border-top: 1px solid #f0f0f0;
-}
-
-.trade-item-card .date-label {
-    font-size: 11px;
-    color: #666;
-}
-
-.trade-item-card .date-value {
-    font-size: 11px;
-    color: #0d47a1;
-    font-weight: 500;
-}
-
-.select-btn {
-    width: 100%;
-    padding: 12px;
-    background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.select-btn:hover {
-    background: linear-gradient(135deg, #0b3d91 0%, #1565c0 100%);
-    transform: translateY(-2px);
-}
-
-.select-btn.selected {
-    background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
-}
-
-/* Selected Items */
-.selected-item-card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    border: 2px solid #0d47a1;
-}
-
-.selected-item-image {
-    width: 100px;
-    height: 100px;
-    margin: 0 auto 10px;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #f8f9fa;
-}
-
-.selected-item-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.selected-item-name {
-    font-size: 16px;
-    font-weight: bold;
-    color: #0d47a1;
-    text-align: center;
-}
-
-.submit-trade-btn {
-    width: 100%;
-    padding: 16px;
-    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.submit-trade-btn:hover {
-    background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(255, 152, 0, 0.3);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .trade-item-card .item-details {
-        padding: 12px;
-    }
-
-    .trade-item-card .item-title {
-        font-size: 14px;
-    }
-}
-</style>
 
 <script>
 let selectedTargetItem = null;
@@ -444,6 +224,7 @@ function selectTargetItem(itemId, itemName, itemImage) {
     const currentBtn = document.querySelector(`[data-item-id="${itemId}"]`);
     currentBtn.classList.add('selected');
     currentBtn.textContent = 'Selected for Trade';
+    currentBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)';
 
     selectedTargetItem = {id: itemId, name: itemName, image: itemImage};
     document.getElementById('target_item_id').value = itemId;
@@ -469,6 +250,7 @@ function selectOfferItem(itemId, itemName, itemImage) {
     const currentBtn = document.querySelector(`[data-item-id="${itemId}"]`);
     currentBtn.classList.add('selected');
     currentBtn.textContent = 'Selected to Offer';
+    currentBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)';
 
     selectedOfferItem = {id: itemId, name: itemName, image: itemImage};
     document.getElementById('offer_item_id').value = itemId;
@@ -490,4 +272,22 @@ function checkTradeReady() {
     }
 }
 </script>
+
+<style>
+.trade-item-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.select-btn:hover {
+    background: linear-gradient(135deg, #0b3d91 0%, #1565c0 100%);
+    transform: translateY(-2px);
+}
+
+.submit-trade-btn:hover {
+    background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 152, 0, 0.3);
+}
+</style>
 {% endblock %}
