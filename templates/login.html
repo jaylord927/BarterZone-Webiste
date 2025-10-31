@@ -5,6 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - BarterZone</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    /* Footer Styles */
+    footer {
+      background: #2c3e50;
+      color: white;
+      text-align: center;
+      padding: 40px 20px;
+      margin-top: 0;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      padding: 8px 16px;
+      border-radius: 6px;
+    }
+
+    .footer-links a:hover {
+      color: white;
+      background: rgba(255,255,255,0.1);
+    }
+
+    footer p {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
   <!-- ===== Navbar ===== -->
@@ -43,7 +82,12 @@
 
   <!-- ===== Footer ===== -->
   <footer>
-    <p>© 2025 BarterZone. All rights reserved.</p>
+    <div class="footer-links">
+      <a href="{{ url_for('about_us') }}">About Us</a>
+      <a href="{{ url_for('privacy') }}">Privacy Policy</a>
+      <a href="{{ url_for('recommendation') }}">Suggestions</a>
+    </div>
+    <p>© 2025 BarterZone. Trade without money. All rights reserved.</p>
   </footer>
 </body>
 </html>

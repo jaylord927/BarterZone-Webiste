@@ -1,18 +1,76 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="hero-section">
-  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 900px;">
-    <h2 style="color:#0d47a1; margin-bottom: 20px;">Trader Dashboard</h2>
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 1200px; width:100%; padding:20px; border-radius:10px;">
+
+    {% if is_admin %}
+    <!-- ADMIN DASHBOARD CONTENT -->
+    <h2 style="color:#0d47a1; margin-bottom:20px; text-align: center;">
+      🛡️ Admin Dashboard
+    </h2>
+
+    <!-- Admin Stats -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+      <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 4px solid #0d47a1;">
+        <div style="font-size: 36px; color: #0d47a1;">👥</div>
+        <h3 style="color:#0d47a1; margin:10px 0;">{{ total_users }}</h3>
+        <p style="color:#666; margin:0;">Total Users</p>
+      </div>
+      <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 4px solid #4CAF50;">
+        <div style="font-size: 36px; color: #4CAF50;">📦</div>
+        <h3 style="color:#4CAF50; margin:10px 0;">{{ total_items }}</h3>
+        <p style="color:#666; margin:0;">Total Items</p>
+      </div>
+      <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 4px solid #ff9800;">
+        <div style="font-size: 36px; color: #ff9800;">🔄</div>
+        <h3 style="color:#ff9800; margin:10px 0;">{{ active_trades }}</h3>
+        <p style="color:#666; margin:0;">Active Trades</p>
+      </div>
+      <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 4px solid #9c27b0;">
+        <div style="font-size: 36px; color: #9c27b0;">✅</div>
+        <h3 style="color:#9c27b0; margin:10px 0;">{{ completed_trades }}</h3>
+        <p style="color:#666; margin:0;">Completed Trades</p>
+      </div>
+    </div>
+
+    <!-- Admin Quick Actions -->
+    <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 25px; border-radius: 12px; margin-bottom: 25px; border-left: 5px solid #0d47a1;">
+      <h3 style="color:#0d47a1; margin-top:0; margin-bottom:20px;">Quick Admin Actions</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn-primary" style="padding: 15px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 8px; text-decoration: none; text-align: center; font-weight: bold;">
+          👥 Manage Users
+        </a>
+        <a href="{{ url_for('admin_dashboard') }}?section=reports" class="btn-primary" style="padding: 15px; background: linear-gradient(135deg, #f44336 0%, #ef5350 100%); color: white; border: none; border-radius: 8px; text-decoration: none; text-align: center; font-weight: bold;">
+          ⚠️ View Reports
+        </a>
+        <a href="{{ url_for('admin_dashboard') }}?section=announcements" class="btn-primary" style="padding: 15px; background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%); color: white; border: none; border-radius: 8px; text-decoration: none; text-align: center; font-weight: bold;">
+          📢 Announcements
+        </a>
+      </div>
+    </div>
+
+    <!-- Admin Notice -->
+    <div style="background: #fff3e0; padding: 20px; border-radius: 10px; border-left: 4px solid #ff9800;">
+      <h4 style="color:#ef6c00; margin-top:0;">Administrator Account</h4>
+      <p style="color:#ef6c00; margin: 0;">
+        You are logged in as an administrator. You can view all platform features
+        but cannot participate in trading activities. Use the Admin Panel for platform management.
+      </p>
+    </div>
+
+    {% else %}
+    <!-- TRADER DASHBOARD CONTENT - Keep existing functionality -->
+    <h2 style="color:#0d47a1; margin-bottom:20px;">Trader Dashboard</h2>
 
     <!-- Quick Actions Menu -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
       <a href="{{ url_for('add_item') }}" class="btn-primary" style="text-align:center; padding:15px;">+ Add New Item</a>
       <a href="{{ url_for('other_traders_items') }}" class="btn-primary" style="text-align:center; padding:15px;">View Other Traders</a>
-      <a href="{{ url_for('trade_requests') }}" class="btn-primary" style="text-align:center; padding:15px;">Trade Requests</a>
+      <a href="{{ url_for('view_trade_requests') }}" class="btn-primary" style="text-align:center; padding:15px;">Trade Requests</a>
       <a href="{{ url_for('trade_history') }}" class="btn-primary" style="text-align:center; padding:15px;">Trade History</a>
     </div>
 
-    <h3 style="color:#0d47a1; margin-bottom: 15px;">My Items</h3>
+    <h3 style="color:#0d47a1; margin-bottom:15px;">My Items</h3>
 
     {% if items %}
     <table style="width:100%; border-collapse:collapse; text-align:left;">
@@ -43,6 +101,8 @@
     {% else %}
       <p>No items added yet.</p>
     {% endif %}
+    {% endif %}
+
   </div>
 </section>
 {% endblock %}

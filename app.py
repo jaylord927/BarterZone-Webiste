@@ -40,6 +40,7 @@ def init_db():
             item_DateOffered TEXT,
             item_Description TEXT,
             item_image TEXT,
+            item_available BOOLEAN DEFAULT 1,
             FOREIGN KEY (user_id) REFERENCES users (id)
         );
         """)
@@ -61,6 +62,14 @@ def init_db():
             meetup_location TEXT,
             meetup_gps TEXT,
             meetup_confirmed BOOLEAN DEFAULT 0,
+            meetup_preferred BOOLEAN DEFAULT 0,
+            meetup_date TEXT,
+            meetup_time TEXT,
+            delivery_preferred BOOLEAN DEFAULT 0,
+            delivery_date TEXT,
+            delivery_courier TEXT,
+            tracking_number TEXT,
+            cancellation_reason TEXT,
             FOREIGN KEY (offer_user_id) REFERENCES users (id),
             FOREIGN KEY (target_user_id) REFERENCES users (id),
             FOREIGN KEY (offer_item_id) REFERENCES items (items_id),
@@ -123,6 +132,108 @@ def init_db():
                );
                """)
 
+        # ADDED: Admin table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS admin_table (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER UNIQUE NOT NULL,
+                username TEXT NOT NULL,
+                email TEXT,
+                full_name TEXT,
+                is_active BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            );
+        """)
+
+        # ADDED: User ratings table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_ratings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                rated_user_id INTEGER NOT NULL,
+                rating_user_id INTEGER NOT NULL,
+                trade_id INTEGER NOT NULL,
+                rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+                comment TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (rated_user_id) REFERENCES users (id),
+                FOREIGN KEY (rating_user_id) REFERENCES users (id),
+                FOREIGN KEY (trade_id) REFERENCES trades (trade_id)
+            );
+        """)
+
+        # ADDED: User reports table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                reported_user_id INTEGER NOT NULL,
+                reporting_user_id INTEGER NOT NULL,
+                trade_id INTEGER NOT NULL,
+                reason TEXT NOT NULL,
+                description TEXT,
+                status TEXT DEFAULT 'pending',
+                admin_notes TEXT,
+                resolved_by INTEGER,
+                resolved_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (reported_user_id) REFERENCES users (id),
+                FOREIGN KEY (reporting_user_id) REFERENCES users (id),
+                FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
+                FOREIGN KEY (resolved_by) REFERENCES users (id)
+            );
+        """)
+
+        # ADDED: User recommendations table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_recommendations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                feedback_type TEXT NOT NULL,
+                priority TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                contact_ok BOOLEAN DEFAULT 0,
+                status TEXT DEFAULT 'pending',
+                admin_notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            );
+        """)
+
+        # ADDED: Announcements table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS announcements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                admin_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                priority TEXT DEFAULT 'normal',
+                is_active BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (admin_id) REFERENCES users (id)
+            );
+        """)
+
+        # ADDED: User bans table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_bans (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                admin_id INTEGER NOT NULL,
+                reason TEXT NOT NULL,
+                duration_days INTEGER,
+                banned_until TIMESTAMP,
+                is_permanent BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT 1,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                FOREIGN KEY (admin_id) REFERENCES users (id)
+            );
+        """)
+
+        print("✅ All database tables created successfully!")
+
 
 def add_user_specific_delivery_columns():
     """Add user-specific delivery columns"""
@@ -154,16 +265,50 @@ def add_user_specific_delivery_columns():
     except Exception as e:
         print(f"❌ Error adding user-specific columns: {e}")
 
+
+def add_item_availability_column():
+    """Add item_available column to items table"""
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            conn.execute("ALTER TABLE items ADD COLUMN item_available BOOLEAN DEFAULT 1")
+            print("✅ Added item_available column to items table")
+
+            # Set all existing items as available
+            conn.execute("UPDATE items SET item_available = 1 WHERE item_available IS NULL")
+            print("✅ Set all existing items as available")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e):
+            print("ℹ️ item_available column already exists")
+        else:
+            print(f"❌ Error adding item_available: {e}")
+
+
 def enhanced_migrate_database():
     """Enhanced database migration with user-specific delivery"""
     migrate_database()
     add_user_specific_delivery_columns()
     add_item_availability_column()
 
+
 # Ensure DB exists
 if not os.path.exists(DB_NAME):
     init_db()
 
+def add_item_availability_column():
+    """Add item_available column to items table"""
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            conn.execute("ALTER TABLE items ADD COLUMN item_available BOOLEAN DEFAULT 1")
+            print("✅ Added item_available column to items table")
+
+            # Set all existing items as available
+            conn.execute("UPDATE items SET item_available = 1 WHERE item_available IS NULL")
+            print("✅ Set all existing items as available")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e):
+            print("ℹ️ item_available column already exists")
+        else:
+            print(f"❌ Error adding item_available: {e}")
 
 def add_missing_columns():
     """Add missing columns to existing tables"""
@@ -354,6 +499,7 @@ def register():
                 flash('Username or email already exists!', 'error')
     return render_template('register.html')
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """User login with username OR email"""
@@ -362,6 +508,7 @@ def login():
         password = request.form['password']
 
         with sqlite3.connect(DB_NAME) as conn:
+            conn.row_factory = sqlite3.Row
             # Check if login is username OR email
             user = conn.execute("""
                 SELECT * FROM users 
@@ -369,13 +516,18 @@ def login():
             """, (username_or_email, username_or_email, password)).fetchone()
 
             if user:
-                session['user_id'] = user[0]
-                session['username'] = user[1]
-                # Safely get full_name - check if the tuple has enough elements
-                if len(user) > 6 and user[6]:  # Check if full_name exists and is not empty
-                    session['full_name'] = user[6]
-                else:
-                    session['full_name'] = user[1]  # Fallback to username
+                session['user_id'] = user['id']
+                session['username'] = user['username']
+                session['full_name'] = user['full_name'] or user['username']
+
+                # Check if user is admin using admin_table
+                admin = conn.execute(
+                    "SELECT * FROM admin_table WHERE user_id = ? AND is_active = 1",
+                    (user['id'],)
+                ).fetchone()
+
+                session['is_admin'] = admin is not None
+
                 flash('Login successful!', 'success')
                 return redirect(url_for('dashboard'))
             else:
@@ -390,17 +542,52 @@ def logout():
     return redirect(url_for('index'))
 
 
+# Add this function to check if user is admin
+def is_admin_user():
+    """Check if current user is admin"""
+    if 'user_id' not in session:
+        return False
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        user = conn.execute(
+            "SELECT is_admin FROM users WHERE id = ?",
+            (session['user_id'],)
+        ).fetchone()
+        return user and user['is_admin']
+
+
 @app.route('/dashboard')
 def dashboard():
-    """User dashboard showing all items with proper status"""
+    """User dashboard - works for both traders and admin"""
     if 'user_id' not in session:
         flash('Please login first.', 'warning')
         return redirect(url_for('login'))
 
     user_id = session['user_id']
+
+    # For ADMIN: Show admin-specific content but same design
+    if is_admin_user():
+        with sqlite3.connect(DB_NAME) as conn:
+            conn.row_factory = sqlite3.Row
+
+            # Get platform stats for admin
+            total_users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+            total_items = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+            active_trades = \
+            conn.execute("SELECT COUNT(*) FROM trades WHERE trade_status IN ('pending', 'accepted')").fetchone()[0]
+            completed_trades = conn.execute("SELECT COUNT(*) FROM trades WHERE trade_status = 'completed'").fetchone()[
+                0]
+
+        return render_template('dashboard.html',
+                               is_admin=True,
+                               total_users=total_users,
+                               total_items=total_items,
+                               active_trades=active_trades,
+                               completed_trades=completed_trades)
+
+    # For TRADERS: Show normal trader dashboard
     with sqlite3.connect(DB_NAME) as conn:
         conn.row_factory = sqlite3.Row
-        # Get all user items with trade status information
         items = conn.execute("""
             SELECT i.*, 
                    CASE 
@@ -416,14 +603,92 @@ def dashboard():
             WHERE i.user_id = ?
         """, (user_id,)).fetchall()
 
-    return render_template('TraderOption.html', items=items, mode='view')
+    return render_template('TraderOption.html', items=items, mode='view', is_admin=False)
+
+@app.route('/admin')
+def admin_dashboard():
+    """Admin dashboard"""
+    if not is_admin_user():
+        flash('Access denied. Admin only.', 'error')
+        return redirect(url_for('dashboard'))
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        # Get stats
+        total_users = conn.execute("SELECT COUNT(*) FROM users WHERE is_admin = 0").fetchone()[0]
+        pending_reports = conn.execute("SELECT COUNT(*) FROM user_reports WHERE status = 'pending'").fetchone()[0]
+        pending_suggestions = \
+        conn.execute("SELECT COUNT(*) FROM user_recommendations WHERE status = 'pending'").fetchone()[0]
+        active_bans = conn.execute("SELECT COUNT(*) FROM user_bans WHERE is_active = 1").fetchone()[0]
+
+        # Get users with report counts
+        users = conn.execute("""
+                   SELECT u.*, 
+                          (SELECT COUNT(*) FROM user_reports WHERE reported_user_id = u.id) as report_count,
+                          (SELECT COUNT(*) FROM user_bans WHERE user_id = u.id AND is_active = 1) as is_banned
+                   FROM users u
+                   WHERE u.is_admin = 0
+                   ORDER BY u.id DESC
+               """).fetchall()
+
+        # Get reports
+        reports = conn.execute("""
+            SELECT ur.*, 
+                   ru.username as reported_username, ru.email as reported_email,
+                   rr.username as reporter_username, rr.email as reporter_email
+            FROM user_reports ur
+            JOIN users ru ON ur.reported_user_id = ru.id
+            JOIN users rr ON ur.reporting_user_id = rr.id
+            ORDER BY ur.created_at DESC
+        """).fetchall()
+
+        # Get suggestions
+        suggestions = conn.execute("""
+            SELECT ur.*, u.username, u.email
+            FROM user_recommendations ur
+            JOIN users u ON ur.user_id = u.id
+            ORDER BY ur.created_at DESC
+        """).fetchall()
+
+        # Get announcements
+        announcements = conn.execute("""
+            SELECT a.*, u.username as admin_username
+            FROM announcements a
+            JOIN users u ON a.admin_id = u.id
+            ORDER BY a.created_at DESC
+        """).fetchall()
+
+        # Get bans
+        bans = conn.execute("""
+            SELECT ub.*, u.username, u.email, admin_u.username as admin_username
+            FROM user_bans ub
+            JOIN users u ON ub.user_id = u.id
+            JOIN users admin_u ON ub.admin_id = admin_u.id
+            ORDER BY ub.created_at DESC
+        """).fetchall()
+
+    return render_template('admin.html',
+                           total_users=total_users,
+                           pending_reports=pending_reports,
+                           pending_suggestions=pending_suggestions,
+                           active_bans=active_bans,
+                           users=users,
+                           reports=reports,
+                           suggestions=suggestions,
+                           announcements=announcements,
+                           bans=bans)
+
 
 @app.route('/add_item', methods=['GET', 'POST'])
 def add_item():
-    """Add new item"""
+    """Add new item - prevent admin from adding items"""
     if 'user_id' not in session:
         flash('Please login first.', 'warning')
         return redirect(url_for('login'))
+
+    if is_admin_user():
+        flash('Administrators cannot add items for trade.', 'error')
+        return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
         data = (
@@ -503,21 +768,22 @@ def delete_item(id):
 
 @app.route('/search_items')
 def search_items():
-    """Search items - EXCLUDE ITEMS IN ACTIVE TRADES AND COMPLETED TRADES"""
+    """Search items - EXCLUDE ADMIN ITEMS"""
     query = request.args.get('q', '')
     with sqlite3.connect(DB_NAME) as conn:
         conn.row_factory = sqlite3.Row
 
-        # EXCLUDE items that are in active trades OR completed trades
+        # EXCLUDE items from admin users
         items = conn.execute("""
             SELECT i.*, u.username, u.full_name, u.location, u.contact
             FROM items i
             JOIN users u ON i.user_id = u.id
             WHERE (i.item_Name LIKE ? OR i.item_Brand LIKE ? OR i.item_Description LIKE ?
             OR u.username LIKE ? OR u.full_name LIKE ?)
+            AND u.is_admin = 0  -- EXCLUDE ADMIN USERS
             AND (i.item_available IS NULL OR i.item_available = 1)
             AND i.items_id NOT IN (
-                -- Items in active trades (pending, accepted)
+                -- Items in active trades
                 SELECT offer_item_id FROM trades WHERE trade_status IN ('pending', 'accepted')
                 UNION 
                 SELECT target_item_id FROM trades WHERE trade_status IN ('pending', 'accepted')
@@ -533,7 +799,7 @@ def search_items():
 
 @app.route('/other_traders_items')
 def other_traders_items():
-    """View other traders' items - ONLY AVAILABLE ITEMS"""
+    """View other traders' items - EXCLUDE ADMIN USERS"""
     if 'user_id' not in session:
         flash('Please login first.', 'warning')
         return redirect(url_for('login'))
@@ -542,12 +808,13 @@ def other_traders_items():
     with sqlite3.connect(DB_NAME) as conn:
         conn.row_factory = sqlite3.Row
 
-        # Get only available items from other traders
+        # Get only available items from other traders (excluding admin)
         items = conn.execute("""
             SELECT i.*, u.username, u.full_name, u.location, u.contact
             FROM items i
             JOIN users u ON i.user_id = u.id
             WHERE i.user_id != ? 
+            AND u.is_admin = 0  -- EXCLUDE ADMIN USERS
             AND i.item_available = 1
             AND i.items_id NOT IN (
                 SELECT offer_item_id FROM trades WHERE trade_status IN ('pending', 'accepted', 'completed')
@@ -606,10 +873,15 @@ def is_item_available_for_trade(item_id):
 # Add these new routes after your existing routes in app.py
 @app.route('/request_trade', methods=['GET', 'POST'])
 def request_trade():
-    """Request a trade - ONLY SHOW AVAILABLE ITEMS"""
+    """Request a trade - prevent admin from trading"""
     if 'user_id' not in session:
         flash('Please login first.', 'warning')
         return redirect(url_for('login'))
+
+    # Prevent admin from trading
+    if is_admin_user():
+        flash('Administrators cannot participate in trades.', 'error')
+        return redirect(url_for('dashboard'))
 
     user_id = session['user_id']
 
@@ -1567,7 +1839,7 @@ def complete_trade(trade_id):
 
 @app.route('/send_message', methods=['GET', 'POST'])
 def send_message():
-    """Send message to another trader"""
+    """Send message to another trader - EXCLUDE ADMIN USERS"""
     if 'user_id' not in session:
         flash('Please login first.', 'warning')
         return redirect(url_for('login'))
@@ -1583,10 +1855,10 @@ def send_message():
             return redirect(url_for('send_message'))
 
         with sqlite3.connect(DB_NAME) as conn:
-            # Verify receiver exists and is not the current user
+            # Verify receiver exists
             receiver = conn.execute(
-                "SELECT id FROM users WHERE id = ? AND id != ?",
-                (receiver_id, user_id)
+                "SELECT id FROM users WHERE id = ? AND is_admin = 0",
+                (receiver_id,)
             ).fetchone()
 
             if not receiver:
@@ -1608,12 +1880,11 @@ def send_message():
         traders = conn.execute("""
             SELECT id, username, full_name, location, contact 
             FROM users 
-            WHERE id != ?
+            WHERE id != ? AND is_admin = 0  -- EXCLUDE ADMIN USERS
             ORDER BY username ASC
         """, (user_id,)).fetchall()
 
     return render_template('send_message.html', traders=traders)
-
 
 @app.route('/view_messages')
 def view_messages():
@@ -1816,9 +2087,437 @@ def change_password():
     flash('Password changed successfully!', 'success')
     return redirect(url_for('profile'))
 
-# =====================
-# HELPER FUNCTIONS
-# =====================
+# In ratings route
+@app.route('/ratings')
+def ratings():
+    """Ratings and reports dashboard"""
+    if 'user_id' not in session:
+        flash('Please login first.', 'warning')
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+
+        # Get all NON-ADMIN users with their average ratings
+        all_users = conn.execute("""
+            SELECT u.id, u.username, u.full_name, u.location,
+                   COALESCE(AVG(ur.rating), 0) as average_rating,
+                   COUNT(ur.id) as total_ratings,
+                   COUNT(DISTINCT t.trade_id) as total_trades
+            FROM users u
+            LEFT JOIN user_ratings ur ON u.id = ur.rated_user_id
+            LEFT JOIN trades t ON (u.id = t.offer_user_id OR u.id = t.target_user_id) AND t.trade_status = 'completed'
+            WHERE u.id != ? AND u.is_admin = 0  -- EXCLUDE ADMIN USERS
+            GROUP BY u.id, u.username, u.full_name, u.location
+            ORDER BY average_rating DESC, total_ratings DESC
+        """, (user_id,)).fetchall()
+
+        # Get current user's rating stats - KEEP THE ORIGINAL VARIABLE NAME
+        user_rating = conn.execute("""
+            SELECT 
+                AVG(rating) as average_rating,
+                COUNT(*) as total_ratings
+            FROM user_ratings 
+            WHERE rated_user_id = ?
+        """, (user_id,)).fetchone()
+
+    return render_template('ratings.html',
+                           all_users=all_users,
+                           user_rating=user_rating,  # Keep original name
+                           user_id=user_id)
+
+@app.route('/rate_user/<int:trade_id>/<int:user_to_rate_id>', methods=['POST'])
+def rate_user(trade_id, user_to_rate_id):
+    """Rate another user after trade completion"""
+    if 'user_id' not in session:
+        return jsonify({'status': 'error', 'message': 'Please login first'})
+
+    user_id = session['user_id']
+    rating = request.form.get('rating')
+    comment = request.form.get('comment', '')
+
+    if not rating:
+        flash('Please select a rating.', 'error')
+        return redirect(url_for('ratings'))
+
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            # Verify trade exists and user can rate
+            trade = conn.execute("""
+                SELECT * FROM trades 
+                WHERE trade_id = ? AND trade_status = 'completed'
+                AND (offer_user_id = ? OR target_user_id = ?)
+            """, (trade_id, user_id, user_id)).fetchone()
+
+            if not trade:
+                flash('Trade not found or not completed.', 'error')
+                return redirect(url_for('ratings'))
+
+            # Check if already rated
+            existing_rating = conn.execute("""
+                SELECT * FROM user_ratings 
+                WHERE trade_id = ? AND rating_user_id = ? AND rated_user_id = ?
+            """, (trade_id, user_id, user_to_rate_id)).fetchone()
+
+            if existing_rating:
+                flash('You have already rated this user for this trade.', 'error')
+                return redirect(url_for('ratings'))
+
+            # Insert rating
+            conn.execute("""
+                INSERT INTO user_ratings (rated_user_id, rating_user_id, trade_id, rating, comment)
+                VALUES (?, ?, ?, ?, ?)
+            """, (user_to_rate_id, user_id, trade_id, int(rating), comment))
+
+            flash('Rating submitted successfully!', 'success')
+            return redirect(url_for('ratings'))
+
+    except Exception as e:
+        flash('Error submitting rating. Please try again.', 'error')
+        return redirect(url_for('ratings'))
+
+
+@app.route('/report_user', methods=['POST'])
+def report_user():
+    """Report a user"""
+    if 'user_id' not in session:
+        return jsonify({'status': 'error', 'message': 'Please login first'})
+
+    user_id = session['user_id']
+    reported_user_id = request.form.get('reported_user_id')
+    trade_id = request.form.get('trade_id')
+    reason = request.form.get('reason')
+    description = request.form.get('description', '')
+
+    if not all([reported_user_id, trade_id, reason]):
+        flash('Please fill all required fields.', 'error')
+        return redirect(url_for('ratings'))
+
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            # Verify trade exists and user is part of it
+            trade = conn.execute("""
+                SELECT * FROM trades 
+                WHERE trade_id = ? AND (offer_user_id = ? OR target_user_id = ?)
+            """, (trade_id, user_id, user_id)).fetchone()
+
+            if not trade:
+                flash('Trade not found.', 'error')
+                return redirect(url_for('ratings'))
+
+            conn.execute("""
+                INSERT INTO user_reports (reported_user_id, reporting_user_id, trade_id, reason, description)
+                VALUES (?, ?, ?, ?, ?)
+            """, (reported_user_id, user_id, trade_id, reason, description))
+
+            flash('Report submitted successfully! Our team will review it.', 'success')
+            return redirect(url_for('ratings'))
+
+    except Exception as e:
+        flash('Error submitting report. Please try again.', 'error')
+        return redirect(url_for('ratings'))
+
+
+@app.route('/get_user_rating_stats/<int:user_id>')
+def get_user_rating_stats(user_id):
+    """Get user rating statistics for AJAX requests"""
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        stats = conn.execute("""
+            SELECT 
+                AVG(rating) as average_rating,
+                COUNT(*) as total_ratings,
+                COUNT(CASE WHEN rating = 5 THEN 1 END) as five_star,
+                COUNT(CASE WHEN rating = 4 THEN 1 END) as four_star,
+                COUNT(CASE WHEN rating = 3 THEN 1 END) as three_star,
+                COUNT(CASE WHEN rating = 2 THEN 1 END) as two_star,
+                COUNT(CASE WHEN rating = 1 THEN 1 END) as one_star
+            FROM user_ratings 
+            WHERE rated_user_id = ?
+        """, (user_id,)).fetchone()
+
+        recent_comments = conn.execute("""
+            SELECT ur.comment, ur.rating, ur.created_at, u.username, u.full_name
+            FROM user_ratings ur
+            JOIN users u ON ur.rating_user_id = u.id
+            WHERE ur.rated_user_id = ? AND ur.comment IS NOT NULL
+            ORDER BY ur.created_at DESC
+            LIMIT 5
+        """, (user_id,)).fetchall()
+
+    return jsonify({
+        'average_rating': round(stats['average_rating'] or 0, 1),
+        'total_ratings': stats['total_ratings'] or 0,
+        'rating_breakdown': {
+            '5_star': stats['five_star'] or 0,
+            '4_star': stats['four_star'] or 0,
+            '3_star': stats['three_star'] or 0,
+            '2_star': stats['two_star'] or 0,
+            '1_star': stats['one_star'] or 0
+        },
+        'recent_comments': [dict(comment) for comment in recent_comments]
+    })
+
+@app.route('/about')
+def about_us():
+    """About Us page"""
+    return render_template('aboutus.html')
+
+@app.route('/privacy')
+def privacy():
+    """Privacy Policy page"""
+    return render_template('privacy.html')
+
+@app.route('/recommendation')
+def recommendation():
+    """Recommendation/Suggestion page"""
+    return render_template('recommendation.html')
+
+@app.route('/submit_recommendation', methods=['POST'])
+def submit_recommendation():
+    """Submit user recommendation/suggestion"""
+    if 'user_id' not in session:
+        flash('Please login to submit feedback.', 'warning')
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    feedback_type = request.form['feedback_type']
+    priority = request.form['priority']
+    title = request.form['title']
+    description = request.form['description']
+    contact_ok = request.form.get('contact_ok', 0)
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.execute("""
+            INSERT INTO user_recommendations 
+            (user_id, feedback_type, priority, title, description, contact_ok, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending')
+        """, (user_id, feedback_type, priority, title, description, contact_ok))
+
+    flash('Thank you for your feedback! We will review your suggestion.', 'success')
+    return redirect(url_for('recommendation'))
+
+
+@app.route('/create_my_admin')
+def create_my_admin():
+    """Create your specific admin account with separate table"""
+    username = "jaylordbarterzone"
+    email = "jblbarterzone@gmail.com"
+    password = "927barterzone"
+    full_name = "Jaylord BarterZone Admin"
+    location = "Admin Location"
+    contact = "Admin Contact"
+
+    with sqlite3.connect(DB_NAME) as conn:
+        try:
+            # Check if user already exists
+            existing_user = conn.execute(
+                "SELECT id FROM users WHERE username = ? OR email = ?",
+                (username, email)
+            ).fetchone()
+
+            if existing_user:
+                # Add existing user to admin table
+                success = add_user_to_admin(existing_user[0], username, email, full_name)
+                if success:
+                    message = "User already exists! Added to admin table."
+                else:
+                    message = "User already exists and is already an admin."
+            else:
+                # Create new user
+                cursor = conn.execute("""
+                    INSERT INTO users (username, email, password, full_name, location, contact)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (username, email, password, full_name, location, contact))
+
+                user_id = cursor.lastrowid
+
+                # Add to admin table
+                add_user_to_admin(user_id, username, email, full_name)
+                message = "Admin user created successfully in both tables!"
+
+            return f"""
+            <div style="max-width: 600px; margin: 50px auto; padding: 20px; background: white; border-radius: 10px; text-align: center;">
+                <h2 style="color: #0d47a1;">✅ {message}</h2>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>Username:</strong> {username}</p>
+                    <p><strong>Password:</strong> {password}</p>
+                    <p><strong>Email:</strong> {email}</p>
+                    <p><strong>Status:</strong> <span style="color: #4CAF50; font-weight: bold;">Administrator</span></p>
+                </div>
+                <a href='/login' style='display: inline-block; padding: 12px 24px; background: #0d47a1; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;'>
+                    🚀 Login as Admin
+                </a>
+            </div>
+            """
+
+        except Exception as e:
+            return f"Error: {str(e)}"
+
+def is_admin_user():
+    """Check if current user is admin using admin_table"""
+    if 'user_id' not in session:
+        return False
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        admin = conn.execute(
+            "SELECT * FROM admin_table WHERE user_id = ? AND is_active = 1",
+            (session['user_id'],)
+        ).fetchone()
+        return admin is not None
+
+def get_admin_users():
+    """Get all active admin users"""
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        admins = conn.execute(
+            "SELECT * FROM admin_table WHERE is_active = 1"
+        ).fetchall()
+        return admins
+
+def add_user_to_admin(user_id, username, email, full_name=None):
+    """Add a user to admin table"""
+    with sqlite3.connect(DB_NAME) as conn:
+        try:
+            conn.execute(
+                "INSERT INTO admin_table (user_id, username, email, full_name) VALUES (?, ?, ?, ?)",
+                (user_id, username, email, full_name)
+            )
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+@app.route('/admin/ban_user', methods=['POST'])
+def ban_user():
+    """Ban a user"""
+    if not is_admin_user():
+        return jsonify({'status': 'error', 'message': 'Access denied'})
+
+    user_id = request.form['user_id']
+    reason = request.form['reason']
+    duration = request.form['duration']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        if duration == 'permanent':
+            conn.execute("""
+                INSERT INTO user_bans (user_id, admin_id, reason, is_permanent, is_active)
+                VALUES (?, ?, ?, 1, 1)
+            """, (user_id, session['user_id'], reason))
+        else:
+            from datetime import datetime, timedelta
+            banned_until = datetime.now() + timedelta(days=int(duration))
+            conn.execute("""
+                INSERT INTO user_bans (user_id, admin_id, reason, duration_days, banned_until, is_active)
+                VALUES (?, ?, ?, ?, ?, 1)
+            """, (user_id, session['user_id'], reason, duration, banned_until))
+
+    flash('User has been banned.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/unban_user/<int:user_id>')
+def unban_user(user_id):
+    """Unban a user"""
+    if not is_admin_user():
+        flash('Access denied.', 'error')
+        return redirect(url_for('dashboard'))
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.execute(
+            "UPDATE user_bans SET is_active = 0 WHERE user_id = ? AND is_active = 1",
+            (user_id,)
+        )
+
+    flash('User has been unbanned.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/create_announcement', methods=['POST'])
+def create_announcement():
+    """Create website announcement"""
+    if not is_admin_user():
+        flash('Access denied.', 'error')
+        return redirect(url_for('dashboard'))
+
+    title = request.form['title']
+    content = request.form['content']
+    priority = request.form['priority']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.execute("""
+            INSERT INTO announcements (admin_id, title, content, priority)
+            VALUES (?, ?, ?, ?)
+        """, (session['user_id'], title, content, priority))
+
+    flash('Announcement created successfully.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/toggle_announcement/<int:announcement_id>', methods=['POST'])
+def toggle_announcement(announcement_id):
+    """Toggle announcement active status"""
+    if not is_admin_user():
+        flash('Access denied.', 'error')
+        return redirect(url_for('dashboard'))
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        announcement = conn.execute(
+            "SELECT is_active FROM announcements WHERE id = ?",
+            (announcement_id,)
+        ).fetchone()
+
+        if announcement:
+            new_status = 0 if announcement['is_active'] else 1
+            conn.execute(
+                "UPDATE announcements SET is_active = ? WHERE id = ?",
+                (new_status, announcement_id)
+            )
+
+    flash('Announcement status updated.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+# Make yourself admin (run this once to set your user as admin)
+@app.route('/make_admin')
+def make_admin():
+    """Make current user admin (for testing)"""
+    if 'user_id' not in session:
+        flash('Please login first to become an admin.', 'warning')
+        return redirect(url_for('login'))
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.execute(
+            "UPDATE users SET is_admin = 1 WHERE id = ?",
+            (session['user_id'],)
+        )
+    flash('You are now an admin! Please logout and login again to see the Admin Panel.', 'success')
+    return redirect(url_for('dashboard'))
+
+def create_recommendations_table():
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_recommendations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    feedback_type TEXT NOT NULL,
+                    priority TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    contact_ok BOOLEAN DEFAULT 0,
+                    status TEXT DEFAULT 'pending',
+                    admin_notes TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                );
+            """)
+            print("✅ User recommendations table created")
+    except Exception as e:
+        print(f"❌ Error creating recommendations table: {e}")
 
 def update_item_availability(item_id, available=True):
     """Update item availability status"""
@@ -1838,8 +2537,6 @@ def get_item_availability(item_id):
         ).fetchone()
         return item['item_available'] if item else False
 
-# Update the items table to include availability column
-# Add this to your app.py or run as a separate script
 def add_item_availability_column():
     try:
         with sqlite3.connect(DB_NAME) as conn:
@@ -1855,15 +2552,101 @@ def add_item_availability_column():
         else:
             print(f"❌ Error adding item_available: {e}")
 
+def create_admin_tables():
+    """Create admin-related tables"""
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            # Add is_admin column to users table
+            try:
+                conn.execute("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0")
+                print("✅ Added is_admin column to users table")
+            except sqlite3.OperationalError as e:
+                if "duplicate column name" in str(e):
+                    print("ℹ️ is_admin column already exists")
+                else:
+                    print(f"❌ Error adding is_admin: {e}")
 
-# Call this in your migrate_database function
-def enhanced_migrate_database():
-    """Enhanced database migration with item availability"""
-    migrate_database()  # Your existing migration
-    add_item_availability_column()
+            # User bans table
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_bans (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    admin_id INTEGER NOT NULL,
+                    reason TEXT NOT NULL,
+                    duration_days INTEGER,
+                    banned_until TIMESTAMP,
+                    is_permanent BOOLEAN DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    is_active BOOLEAN DEFAULT 1,
+                    FOREIGN KEY (user_id) REFERENCES users (id),
+                    FOREIGN KEY (admin_id) REFERENCES users (id)
+                );
+            """)
+            print("✅ User bans table created")
+
+            # User reports table (if not exists)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_reports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    reported_user_id INTEGER NOT NULL,
+                    reporting_user_id INTEGER NOT NULL,
+                    trade_id INTEGER NOT NULL,
+                    reason TEXT NOT NULL,
+                    description TEXT,
+                    status TEXT DEFAULT 'pending',
+                    admin_notes TEXT,
+                    resolved_by INTEGER,
+                    resolved_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (reported_user_id) REFERENCES users (id),
+                    FOREIGN KEY (reporting_user_id) REFERENCES users (id),
+                    FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
+                    FOREIGN KEY (resolved_by) REFERENCES users (id)
+                );
+            """)
+            print("✅ User reports table created")
+
+            # User recommendations table
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_recommendations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    feedback_type TEXT NOT NULL,
+                    priority TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    contact_ok BOOLEAN DEFAULT 0,
+                    status TEXT DEFAULT 'pending',
+                    admin_notes TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                );
+            """)
+            print("✅ User recommendations table created")
+
+            # Website announcements table
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS announcements (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    admin_id INTEGER NOT NULL,
+                    title TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    priority TEXT DEFAULT 'normal',
+                    is_active BOOLEAN DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (admin_id) REFERENCES users (id)
+                );
+            """)
+            print("✅ Announcements table created")
+
+    except Exception as e:
+        print(f"❌ Error creating admin tables: {e}")
 
 # =====================
 # RUN APP
 # =====================
 if __name__ == '__main__':
+    create_recommendations_table()
+    create_admin_tables()
     app.run(debug=True)

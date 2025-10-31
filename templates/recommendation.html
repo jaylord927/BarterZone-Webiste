@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-section">
+  <div class="overlay" style="background: rgba(255,255,255,0.95); color:#333; max-width: 800px; width:100%; padding:30px; border-radius:12px;">
+
+    <div style="text-align: center; margin-bottom: 30px;">
+      <h2 style="color:#0d47a1; margin-bottom:10px; font-size: 28px;">Help Us Improve BarterZone</h2>
+      <p style="color:#666; font-size: 16px;">Your feedback helps us create a better trading experience for everyone</p>
+    </div>
+
+    <!-- Feedback Form -->
+    <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 25px; border-radius: 12px; margin-bottom: 25px; border-left: 5px solid #0d47a1;">
+      <h3 style="color:#0d47a1; margin-top:0; margin-bottom:20px; display: flex; align-items: center; gap: 10px;">
+        <span>💡</span>
+        Share Your Ideas & Suggestions
+      </h3>
+
+      <form method="POST" action="{{ url_for('submit_recommendation') }}">
+        <!-- Type of Feedback -->
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color:#0d47a1;">Type of Feedback</label>
+          <select name="feedback_type" required style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+            <option value="">Select feedback type</option>
+            <option value="feature">New Feature Idea</option>
+            <option value="improvement">Platform Improvement</option>
+            <option value="bug">Bug Report</option>
+            <option value="design">Design Suggestion</option>
+            <option value="security">Security Concern</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <!-- Priority -->
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color:#0d47a1;">Priority Level</label>
+          <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 5px;">
+              <input type="radio" name="priority" value="low" required>
+              <span>Low</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px;">
+              <input type="radio" name="priority" value="medium">
+              <span>Medium</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px;">
+              <input type="radio" name="priority" value="high">
+              <span>High</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px;">
+              <input type="radio" name="priority" value="critical">
+              <span>Critical</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color:#0d47a1;">Title</label>
+          <input type="text" name="title" placeholder="Brief description of your suggestion" required
+                 style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+        </div>
+
+        <!-- Description -->
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color:#0d47a1;">Detailed Description</label>
+          <textarea name="description" placeholder="Please provide detailed information about your suggestion, idea, or issue..." required
+                    style="width: 100%; height: 200px; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
+        </div>
+
+        <!-- Contact Preference -->
+        <div style="margin-bottom: 25px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color:#0d47a1;">Contact Preference</label>
+          <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 5px;">
+              <input type="checkbox" name="contact_ok" value="1">
+              <span>I'm open to being contacted for follow-up questions</span>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
+          📤 Submit Feedback
+        </button>
+      </form>
+    </div>
+
+    <!-- What Happens Next -->
+    <div style="background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%); padding: 25px; border-radius: 12px; margin-bottom: 25px; border-left: 5px solid #4CAF50;">
+      <h3 style="color:#2e7d32; margin-top:0; margin-bottom:15px; display: flex; align-items: center; gap: 10px;">
+        <span>📝</span>
+        What Happens to Your Feedback?
+      </h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <div style="text-align: center;">
+          <div style="font-size: 36px; color: #2e7d32;">👥</div>
+          <h4 style="color:#2e7d32; margin:10px 0;">Review</h4>
+          <p style="color:#333; font-size: 14px;">Our team reviews all suggestions regularly</p>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 36px; color: #2e7d32;">📊</div>
+          <h4 style="color:#2e7d32; margin:10px 0;">Analysis</h4>
+          <p style="color:#333; font-size: 14px;">We analyze feasibility and community impact</p>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 36px; color: #2e7d32;">🔄</div>
+          <h4 style="color:#2e7d32; margin:10px 0;">Implementation</h4>
+          <p style="color:#333; font-size: 14px;">Popular ideas get prioritized for development</p>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 36px; color: #2e7d32;">💬</div>
+          <h4 style="color:#2e7d32; margin:10px 0;">Updates</h4>
+          <p style="color:#333; font-size: 14px;">We share progress on major improvements</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Suggestions (Admin View Placeholder) -->
+    {% if session.user_id == 1 %}  <!-- Assuming user_id 1 is admin -->
+    <div style="background: #fff3e0; padding: 25px; border-radius: 12px; border-left: 5px solid #ff9800;">
+      <h3 style="color:#ef6c00; margin-top:0; margin-bottom:20px;">Admin: Recent Suggestions</h3>
+      <div style="max-height: 300px; overflow-y: auto;">
+        <!-- This would be populated from the database -->
+        <p style="color:#666; text-align: center; font-style: italic;">
+          Recent user suggestions will appear here for admin review
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 30px;">
+      <a href="{{ url_for('about_us') }}" class="btn-primary" style="padding: 12px 25px; background: #546e7a; color: white; border: none; border-radius: 8px; font-weight: bold; text-decoration: none; transition: all 0.3s ease;">
+        ← Back to About Us
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<style>
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: #0d47a1 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.1);
+}
+</style>
+{% endblock %}
