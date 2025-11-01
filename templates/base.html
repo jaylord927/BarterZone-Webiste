@@ -1,377 +1,372 @@
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>BarterZone - {% block title %}Trade Without Money{% endblock %}</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarterZone - {% block title %}Trade Without Money{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-            body {
-                font-family: 'Poppins', sans-serif;
-                background: url("{{ url_for('static', filename='home.png') }}");
-                background-size: cover;
-                background-position: center;
-                background-attachment: fixed;
-                background-repeat: no-repeat;
-                color: #1e293b;
-                line-height: 1.6;
-                min-height: 100vh;
-                /* Remove the white fallback color */
-            }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #05C9E8;
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
 
-            /* Navigation Styles */
+        /* Navigation Styles */
+        .navbar {
+            background: rgba(13, 71, 161, 0.95);
+            padding: 0 50px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 70px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 15px;
+            margin: 0;
+            padding: 0;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 12px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 15px;
+            white-space: nowrap;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-links .admin-panel {
+            color: #ffeb3b;
+            font-weight: 600;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-links .logout {
+            background: rgba(255,255,255,0.15);
+            font-weight: 600;
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+
+        .flash-message {
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            color: white;
+            position: relative;
+            animation: slideInRight 0.3s ease-out;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            font-weight: 500;
+        }
+
+        .flash-success { background: #4CAF50; }
+        .flash-error { background: #f44336; }
+        .flash-warning { background: #ff9800; }
+        .flash-info { background: #2196F3; }
+
+        .flash-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+        }
+
+        .flash-close:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Main Content */
+        main {
+            min-height: calc(100vh - 160px);
+            padding: 0;
+        }
+
+        .content-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Content Cards */
+        .content-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Footer */
+        footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+            margin-top: 0;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+
+        .footer-links a:hover {
+            color: white;
+            background: rgba(255,255,255,0.1);
+        }
+
+        footer p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* Animations */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
             .navbar {
-                background: rgba(13, 71, 161, 0.95);
-                padding: 0 50px;
-                box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                min-height: 70px;
-                position: sticky;
-                top: 0;
-                z-index: 1000;
-            }
-
-            .logo {
-                font-size: 1.8em;
-                font-weight: bold;
-                color: white;
-                text-decoration: none;
+                padding: 0 30px;
             }
 
             .nav-links {
-                display: flex;
-                list-style: none;
-                gap: 15px;
-                margin: 0;
-                padding: 0;
-                align-items: center;
+                gap: 10px;
             }
 
             .nav-links a {
-                color: white;
-                text-decoration: none;
-                font-weight: 500;
-                padding: 12px 20px;
-                border-radius: 8px;
-                transition: all 0.3s ease;
-                font-size: 15px;
-                white-space: nowrap;
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
             }
 
-            .nav-links a:hover {
-                background: rgba(255,255,255,0.2);
-                transform: translateY(-2px);
-            }
-
-            .nav-links .admin-panel {
-                color: #ffeb3b;
-                font-weight: 600;
-                background: rgba(255,255,255,0.1);
-            }
-
-            .nav-links .logout {
-                background: rgba(255,255,255,0.15);
-                font-weight: 600;
-            }
-
-            /* Flash Messages */
-            .flash-messages {
-                position: fixed;
-                top: 80px;
-                right: 20px;
-                z-index: 1000;
-                max-width: 400px;
-            }
-
-            .flash-message {
-                padding: 16px 20px;
-                margin-bottom: 10px;
-                border-radius: 10px;
-                color: white;
-                position: relative;
-                animation: slideInRight 0.3s ease-out;
-                box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-                font-weight: 500;
-            }
-
-            .flash-success { background: #4CAF50; }
-            .flash-error { background: #f44336; }
-            .flash-warning { background: #ff9800; }
-            .flash-info { background: #2196F3; }
-
-            .flash-close {
-                background: none;
-                border: none;
-                color: white;
-                font-size: 18px;
-                position: absolute;
-                right: 12px;
-                top: 50%;
-                transform: translateY(-50%);
-                cursor: pointer;
-                padding: 0;
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
+            .nav-links {
+                flex-wrap: wrap;
                 justify-content: center;
-                transition: background 0.3s ease;
+                gap: 8px;
             }
 
-            .flash-close:hover {
-                background: rgba(255,255,255,0.2);
+            .nav-links a {
+                padding: 8px 12px;
+                font-size: 13px;
             }
 
-            /* Main Content */
-            main {
-                min-height: calc(100vh - 160px);
-                padding: 0;
+            .flash-messages {
+                position: relative;
+                top: 0;
+                right: 0;
+                max-width: 100%;
+                padding: 15px;
             }
 
             .content-wrapper {
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 40px 20px;
-            }
-
-            /* Content Cards - Remove white background */
-            .content-card {
-                background: transparent;
-                border-radius: 15px;
-                padding: 30px;
-                margin-bottom: 20px;
-                box-shadow: none;
-                border: none;
-            }
-
-            /* Footer */
-            footer {
-                background: #2c3e50;
-                color: white;
-                text-align: center;
-                padding: 40px 20px;
-                margin-top: 0;
+                padding: 20px 15px;
             }
 
             .footer-links {
-                display: flex;
-                justify-content: center;
-                gap: 30px;
-                margin-bottom: 20px;
-                flex-wrap: wrap;
+                gap: 15px;
             }
 
             .footer-links a {
-                color: #cbd5e1;
-                text-decoration: none;
-                font-size: 14px;
-                font-weight: 500;
-                transition: all 0.3s ease;
-                padding: 8px 16px;
-                border-radius: 6px;
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar {
+                padding: 12px 15px;
             }
 
-            .footer-links a:hover {
-                color: white;
-                background: rgba(255,255,255,0.1);
+            .logo {
+                font-size: 1.5em;
             }
 
-            footer p {
-                color: #94a3b8;
-                font-size: 14px;
-                margin-top: 10px;
+            .nav-links {
+                gap: 5px;
             }
 
-            /* Animations */
-            @keyframes slideInRight {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
+            .nav-links a {
+                padding: 6px 10px;
+                font-size: 12px;
             }
 
-            @keyframes slideOutRight {
-                from {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
+            .content-wrapper {
+                padding: 15px 10px;
             }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="{{ url_for('index') }}" class="logo">BarterZone</a>
 
-            /* Responsive Design */
-            @media (max-width: 1024px) {
-                .navbar {
-                    padding: 0 30px;
-                }
+        <ul class="nav-links">
+            <li><a href="{{ url_for('index') }}">Home</a></li>
 
-                .nav-links {
-                    gap: 10px;
-                }
+            {% if session.user_id %}
+                <!-- COMMON NAVIGATION FOR BOTH TRADERS AND ADMIN -->
+                <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('other_traders_items') }}">All Items</a></li>
+                <li><a href="{{ url_for('request_trade') }}">Request Trade</a></li>
+                <li><a href="{{ url_for('view_trade_requests') }}">Trade Requests</a></li>
+                <li><a href="{{ url_for('trade_history') }}">Trade History</a></li>
+                <li><a href="{{ url_for('send_message') }}">Send Message</a></li>
+                <li><a href="{{ url_for('view_messages') }}">Messages</a></li>
+                <li><a href="{{ url_for('ratings') }}">Ratings</a></li>
+                <li><a href="{{ url_for('profile') }}">Profile</a></li>
 
-                .nav-links a {
-                    padding: 10px 16px;
-                    font-size: 14px;
-                }
-            }
-
-            @media (max-width: 768px) {
-                .navbar {
-                    padding: 15px 20px;
-                    flex-direction: column;
-                    gap: 15px;
-                }
-
-                .nav-links {
-                    flex-wrap: wrap;
-                    justify-content: center;
-                    gap: 8px;
-                }
-
-                .nav-links a {
-                    padding: 8px 12px;
-                    font-size: 13px;
-                }
-
-                .flash-messages {
-                    position: relative;
-                    top: 0;
-                    right: 0;
-                    max-width: 100%;
-                    padding: 15px;
-                }
-
-                .content-wrapper {
-                    padding: 20px 15px;
-                }
-
-                .footer-links {
-                    gap: 15px;
-                }
-
-                .footer-links a {
-                    padding: 6px 12px;
-                    font-size: 13px;
-                }
-            }
-
-            @media (max-width: 480px) {
-                .navbar {
-                    padding: 12px 15px;
-                }
-
-                .logo {
-                    font-size: 1.5em;
-                }
-
-                .nav-links {
-                    gap: 5px;
-                }
-
-                .nav-links a {
-                    padding: 6px 10px;
-                    font-size: 12px;
-                }
-
-                .content-wrapper {
-                    padding: 15px 10px;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <!-- Navigation -->
-        <nav class="navbar">
-            <a href="{{ url_for('index') }}" class="logo">BarterZone</a>
-
-            <ul class="nav-links">
-                <li><a href="{{ url_for('index') }}">Home</a></li>
-
-                {% if session.user_id %}
-                    <!-- COMMON NAVIGATION FOR BOTH TRADERS AND ADMIN -->
-                    <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                    <li><a href="{{ url_for('other_traders_items') }}">All Items</a></li>
-                    <li><a href="{{ url_for('request_trade') }}">Request Trade</a></li>
-                    <li><a href="{{ url_for('view_trade_requests') }}">Trade Requests</a></li>
-                    <li><a href="{{ url_for('trade_history') }}">Trade History</a></li>
-                    <li><a href="{{ url_for('send_message') }}">Send Message</a></li>
-                    <li><a href="{{ url_for('view_messages') }}">Messages</a></li>
-                    <li><a href="{{ url_for('ratings') }}">Ratings</a></li>
-                    <li><a href="{{ url_for('profile') }}">Profile</a></li>
-
-                    <!-- Admin Panel link (visible to admin users) -->
-                    {% if session.is_admin %}
-                    <li><a href="{{ url_for('admin_dashboard') }}" class="admin-panel">Admin Panel</a></li>
-                    {% endif %}
-
-                    <li><a href="{{ url_for('logout') }}" class="logout">Logout ({{ session.username }})</a></li>
-                {% else %}
-                    <li><a href="{{ url_for('login') }}">Login</a></li>
-                    <li><a href="{{ url_for('register') }}">Register</a></li>
+                <!-- Admin Panel link (visible to admin users) -->
+                {% if session.is_admin %}
+                <li><a href="{{ url_for('admin_dashboard') }}" class="admin-panel">Admin Panel</a></li>
                 {% endif %}
-            </ul>
-        </nav>
 
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="flash-message flash-{{ category }}">
-                            {{ message }}
-                            <button class="flash-close" onclick="this.parentElement.remove()">×</button>
-                        </div>
-                    {% endfor %}
-                </div>
+                <li><a href="{{ url_for('logout') }}" class="logout">Logout ({{ session.username }})</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+                <li><a href="{{ url_for('register') }}">Register</a></li>
             {% endif %}
-        {% endwith %}
+        </ul>
+    </nav>
 
-        <!-- Main Content -->
-        <main>
-            <div class="content-wrapper">
-                {% block content %}{% endblock %}
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">
+                        {{ message }}
+                        <button class="flash-close" onclick="this.parentElement.remove()">×</button>
+                    </div>
+                {% endfor %}
             </div>
-        </main>
+        {% endif %}
+    {% endwith %}
 
-        <!-- Footer -->
-        <footer>
-            <div class="footer-links">
-                <a href="{{ url_for('about_us') }}">About Us</a>
-                <a href="{{ url_for('privacy') }}">Privacy Policy</a>
-                <a href="{{ url_for('recommendation') }}">Suggestions</a>
-            </div>
-            <p>© 2025 BarterZone. Trade without money. All rights reserved.</p>
-        </footer>
+    <!-- Main Content -->
+    <main>
+        <div class="content-wrapper">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
 
-        <script>
-            // Auto-hide flash messages after 5 seconds
-            document.addEventListener('DOMContentLoaded', function() {
-                const flashMessages = document.querySelectorAll('.flash-message');
-                flashMessages.forEach(message => {
-                    setTimeout(() => {
-                        if (message.parentElement) {
-                            message.style.animation = 'slideOutRight 0.3s ease-in';
-                            setTimeout(() => message.remove(), 300);
-                        }
-                    }, 5000);
-                });
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="{{ url_for('about_us') }}">About Us</a>
+            <a href="{{ url_for('privacy') }}">Privacy Policy</a>
+            <a href="{{ url_for('recommendation') }}">Suggestions</a>
+        </div>
+        <p>© 2025 BarterZone. Trade without money. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Auto-hide flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(message => {
+                setTimeout(() => {
+                    if (message.parentElement) {
+                        message.style.animation = 'slideOutRight 0.3s ease-in';
+                        setTimeout(() => message.remove(), 300);
+                    }
+                }, 5000);
             });
-        </script>
-    </body>
-    </html>
+        });
+    </script>
+</body>
+</html>

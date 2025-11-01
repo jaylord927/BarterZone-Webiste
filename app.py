@@ -2537,20 +2537,6 @@ def get_item_availability(item_id):
         ).fetchone()
         return item['item_available'] if item else False
 
-def add_item_availability_column():
-    try:
-        with sqlite3.connect(DB_NAME) as conn:
-            conn.execute("ALTER TABLE items ADD COLUMN item_available BOOLEAN DEFAULT 1")
-            print("✅ Added item_available column to items table")
-
-            # Set all existing items as available
-            conn.execute("UPDATE items SET item_available = 1 WHERE item_available IS NULL")
-            print("✅ Set all existing items as available")
-    except sqlite3.OperationalError as e:
-        if "duplicate column name" in str(e):
-            print("ℹ️ item_available column already exists")
-        else:
-            print(f"❌ Error adding item_available: {e}")
 
 def create_admin_tables():
     """Create admin-related tables"""
