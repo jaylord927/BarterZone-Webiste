@@ -2633,6 +2633,6 @@ def create_admin_tables():
 # RUN APP
 # =====================
 if __name__ == '__main__':
-    create_recommendations_table()
-    create_admin_tables()
+    #create_recommendations_table()
+    #create_admin_tables()
     app.run(debug=True)
