@@ -1194,77 +1194,182 @@ def trade_arrangement(trade_id):
 
     if request.method == 'POST':
         method = request.form.get('method')
+        action = request.form.get('action', 'save_general')
 
-        # Get form data based on which user is submitting
-        if user_id == trade['offer_user_id']:
-            # Jaylord is updating his details
-            delivery_address = request.form.get('offer_delivery_address')
-            delivery_date = request.form.get('offer_delivery_date')
-            courier_option = request.form.get('offer_courier_option')
-            delivery_instructions = request.form.get('offer_delivery_instructions')
-            tracking_number = request.form.get('offer_tracking_number')
-        else:
-            # Keth is updating her details
-            delivery_address = request.form.get('target_delivery_address')
-            delivery_date = request.form.get('target_delivery_date')
-            courier_option = request.form.get('target_courier_option')
-            delivery_instructions = request.form.get('target_delivery_instructions')
-            tracking_number = request.form.get('target_tracking_number')
+        # Handle meetup details save
+        if action == 'save_meetup' and method in ['meetup', 'mixed']:
+            meetup_location = request.form.get('meetup_location')
+            meetup_time = request.form.get('meetup_time')
+            meetup_date = request.form.get('meetup_date')
+            meetup_contact = request.form.get('meetup_contact')
 
-        with sqlite3.connect(DB_NAME) as conn:
-            if not arrangement:
-                # Create new arrangement
-                if user_id == trade['offer_user_id']:
-                    # Jaylord is creating arrangement
+            # Validate required fields
+            if not all([meetup_location, meetup_time, meetup_date]):
+                flash('Please fill all required meetup details: location, time, and date.', 'error')
+                return redirect(url_for('trade_arrangement', trade_id=trade_id))
+
+            with sqlite3.connect(DB_NAME) as conn:
+                if not arrangement:
+                    # Create new arrangement with meetup details
                     conn.execute("""
                         INSERT INTO trade_arrangements 
-                        (trade_id, initiator_id, method, 
-                         offer_delivery_address, offer_delivery_date, offer_courier_option, 
-                         offer_delivery_instructions, offer_tracking_number,
+                        (trade_id, initiator_id, method, meetup_location, meetup_time, meetup_date, meetup_contact,
                          user1_confirmed_details, user2_confirmed_details, user1_confirmed_receipt, user2_confirmed_receipt)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0)
-                    """, (trade_id, user_id, method, delivery_address, delivery_date,
-                          courier_option, delivery_instructions, tracking_number))
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0)
+                    """, (trade_id, user_id, method, meetup_location, meetup_time, meetup_date, meetup_contact))
                 else:
-                    # Keth is creating arrangement
+                    # Update existing arrangement with meetup details
                     conn.execute("""
-                        INSERT INTO trade_arrangements 
-                        (trade_id, initiator_id, method, 
-                         target_delivery_address, target_delivery_date, target_courier_option, 
-                         target_delivery_instructions, target_tracking_number,
-                         user1_confirmed_details, user2_confirmed_details, user1_confirmed_receipt, user2_confirmed_receipt)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0)
-                    """, (trade_id, user_id, method, delivery_address, delivery_date,
-                          courier_option, delivery_instructions, tracking_number))
+                        UPDATE trade_arrangements 
+                        SET method = ?, meetup_location = ?, meetup_time = ?, meetup_date = ?, meetup_contact = ?,
+                            updated_at = CURRENT_TIMESTAMP,
+                            user1_confirmed_details = 0, user2_confirmed_details = 0
+                        WHERE trade_id = ?
+                    """, (method, meetup_location, meetup_time, meetup_date, meetup_contact, trade_id))
+
+                flash('Meetup details saved successfully!', 'success')
+                return redirect(url_for('trade_arrangement', trade_id=trade_id))
+
+        # Handle general arrangement save (delivery and mixed methods)
+        elif action == 'save_general':
+            # Get form data based on which user is submitting
+            if user_id == trade['offer_user_id']:
+                # Jaylord is updating his details
+                delivery_address = request.form.get('offer_delivery_address')
+                delivery_date = request.form.get('offer_delivery_date')
+                courier_option = request.form.get('offer_courier_option')
+                delivery_instructions = request.form.get('offer_delivery_instructions')
+                tracking_number = request.form.get('offer_tracking_number')
             else:
-                # Update existing arrangement
-                if user_id == trade['offer_user_id']:
-                    # Jaylord is updating his details
-                    conn.execute("""
-                        UPDATE trade_arrangements 
-                        SET method = ?, 
-                            offer_delivery_address = ?, offer_delivery_date = ?, offer_courier_option = ?, 
-                            offer_delivery_instructions = ?, offer_tracking_number = ?,
-                            updated_at = CURRENT_TIMESTAMP,
-                            user1_confirmed_details = 0, user2_confirmed_details = 0
-                        WHERE trade_id = ?
-                    """, (method, delivery_address, delivery_date, courier_option,
-                          delivery_instructions, tracking_number, trade_id))
-                else:
-                    # Keth is updating her details
-                    conn.execute("""
-                        UPDATE trade_arrangements 
-                        SET method = ?, 
-                            target_delivery_address = ?, target_delivery_date = ?, target_courier_option = ?, 
-                            target_delivery_instructions = ?, target_tracking_number = ?,
-                            updated_at = CURRENT_TIMESTAMP,
-                            user1_confirmed_details = 0, user2_confirmed_details = 0
-                        WHERE trade_id = ?
-                    """, (method, delivery_address, delivery_date, courier_option,
-                          delivery_instructions, tracking_number, trade_id))
+                # Keth is updating her details
+                delivery_address = request.form.get('target_delivery_address')
+                delivery_date = request.form.get('target_delivery_date')
+                courier_option = request.form.get('target_courier_option')
+                delivery_instructions = request.form.get('target_delivery_instructions')
+                tracking_number = request.form.get('target_tracking_number')
 
-            flash('Your delivery details have been updated! The other user needs to confirm the changes.', 'success')
-            return redirect(url_for('trade_arrangement', trade_id=trade_id))
+            # For mixed method, also get meetup details
+            meetup_location = request.form.get('meetup_location')
+            meetup_time = request.form.get('meetup_time')
+            meetup_date = request.form.get('meetup_date')
+            meetup_contact = request.form.get('meetup_contact')
+
+            with sqlite3.connect(DB_NAME) as conn:
+                if not arrangement:
+                    # Create new arrangement
+                    if user_id == trade['offer_user_id']:
+                        # Jaylord is creating arrangement
+                        if method in ['meetup', 'mixed']:
+                            # Include meetup details for meetup and mixed methods
+                            conn.execute("""
+                                INSERT INTO trade_arrangements 
+                                (trade_id, initiator_id, method, 
+                                 offer_delivery_address, offer_delivery_date, offer_courier_option, 
+                                 offer_delivery_instructions, offer_tracking_number,
+                                 meetup_location, meetup_time, meetup_date, meetup_contact,
+                                 user1_confirmed_details, user2_confirmed_details, user1_confirmed_receipt, user2_confirmed_receipt)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0)
+                            """, (trade_id, user_id, method, delivery_address, delivery_date,
+                                  courier_option, delivery_instructions, tracking_number,
+                                  meetup_location, meetup_time, meetup_date, meetup_contact))
+                        else:
+                            # Delivery method only
+                            conn.execute("""
+                                INSERT INTO trade_arrangements 
+                                (trade_id, initiator_id, method, 
+                                 offer_delivery_address, offer_delivery_date, offer_courier_option, 
+                                 offer_delivery_instructions, offer_tracking_number,
+                                 user1_confirmed_details, user2_confirmed_details, user1_confirmed_receipt, user2_confirmed_receipt)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0)
+                            """, (trade_id, user_id, method, delivery_address, delivery_date,
+                                  courier_option, delivery_instructions, tracking_number))
+                    else:
+                        # Keth is creating arrangement
+                        if method in ['meetup', 'mixed']:
+                            # Include meetup details for meetup and mixed methods
+                            conn.execute("""
+                                INSERT INTO trade_arrangements 
+                                (trade_id, initiator_id, method, 
+                                 target_delivery_address, target_delivery_date, target_courier_option, 
+                                 target_delivery_instructions, target_tracking_number,
+                                 meetup_location, meetup_time, meetup_date, meetup_contact,
+                                 user1_confirmed_details, user2_confirmed_details, user1_confirmed_receipt, user2_confirmed_receipt)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0)
+                            """, (trade_id, user_id, method, delivery_address, delivery_date,
+                                  courier_option, delivery_instructions, tracking_number,
+                                  meetup_location, meetup_time, meetup_date, meetup_contact))
+                        else:
+                            # Delivery method only
+                            conn.execute("""
+                                INSERT INTO trade_arrangements 
+                                (trade_id, initiator_id, method, 
+                                 target_delivery_address, target_delivery_date, target_courier_option, 
+                                 target_delivery_instructions, target_tracking_number,
+                                 user1_confirmed_details, user2_confirmed_details, user1_confirmed_receipt, user2_confirmed_receipt)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0)
+                            """, (trade_id, user_id, method, delivery_address, delivery_date,
+                                  courier_option, delivery_instructions, tracking_number))
+                else:
+                    # Update existing arrangement
+                    if user_id == trade['offer_user_id']:
+                        # Jaylord is updating his details
+                        if method in ['meetup', 'mixed']:
+                            # Update with meetup details
+                            conn.execute("""
+                                UPDATE trade_arrangements 
+                                SET method = ?, 
+                                    offer_delivery_address = ?, offer_delivery_date = ?, offer_courier_option = ?, 
+                                    offer_delivery_instructions = ?, offer_tracking_number = ?,
+                                    meetup_location = ?, meetup_time = ?, meetup_date = ?, meetup_contact = ?,
+                                    updated_at = CURRENT_TIMESTAMP,
+                                    user1_confirmed_details = 0, user2_confirmed_details = 0
+                                WHERE trade_id = ?
+                            """, (method, delivery_address, delivery_date, courier_option,
+                                  delivery_instructions, tracking_number,
+                                  meetup_location, meetup_time, meetup_date, meetup_contact, trade_id))
+                        else:
+                            # Update without meetup details (delivery method)
+                            conn.execute("""
+                                UPDATE trade_arrangements 
+                                SET method = ?, 
+                                    offer_delivery_address = ?, offer_delivery_date = ?, offer_courier_option = ?, 
+                                    offer_delivery_instructions = ?, offer_tracking_number = ?,
+                                    updated_at = CURRENT_TIMESTAMP,
+                                    user1_confirmed_details = 0, user2_confirmed_details = 0
+                                WHERE trade_id = ?
+                            """, (method, delivery_address, delivery_date, courier_option,
+                                  delivery_instructions, tracking_number, trade_id))
+                    else:
+                        # Keth is updating her details
+                        if method in ['meetup', 'mixed']:
+                            # Update with meetup details
+                            conn.execute("""
+                                UPDATE trade_arrangements 
+                                SET method = ?, 
+                                    target_delivery_address = ?, target_delivery_date = ?, target_courier_option = ?, 
+                                    target_delivery_instructions = ?, target_tracking_number = ?,
+                                    meetup_location = ?, meetup_time = ?, meetup_date = ?, meetup_contact = ?,
+                                    updated_at = CURRENT_TIMESTAMP,
+                                    user1_confirmed_details = 0, user2_confirmed_details = 0
+                                WHERE trade_id = ?
+                            """, (method, delivery_address, delivery_date, courier_option,
+                                  delivery_instructions, tracking_number,
+                                  meetup_location, meetup_time, meetup_date, meetup_contact, trade_id))
+                        else:
+                            # Update without meetup details (delivery method)
+                            conn.execute("""
+                                UPDATE trade_arrangements 
+                                SET method = ?, 
+                                    target_delivery_address = ?, target_delivery_date = ?, target_courier_option = ?, 
+                                    target_delivery_instructions = ?, target_tracking_number = ?,
+                                    updated_at = CURRENT_TIMESTAMP,
+                                    user1_confirmed_details = 0, user2_confirmed_details = 0
+                                WHERE trade_id = ?
+                            """, (method, delivery_address, delivery_date, courier_option,
+                                  delivery_instructions, tracking_number, trade_id))
+
+                flash('Your arrangement details have been updated! The other user needs to confirm the changes.', 'success')
+                return redirect(url_for('trade_arrangement', trade_id=trade_id))
 
     # GET request - reload the arrangement data after update
     with sqlite3.connect(DB_NAME) as conn:
@@ -2356,10 +2461,12 @@ def create_my_admin():
         except Exception as e:
             return f"Error: {str(e)}"
 
+
 def is_admin_user():
     """Check if current user is admin using admin_table"""
     if 'user_id' not in session:
         return False
+
     with sqlite3.connect(DB_NAME) as conn:
         conn.row_factory = sqlite3.Row
         admin = conn.execute(

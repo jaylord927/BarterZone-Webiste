@@ -526,23 +526,58 @@
             <h5 style="color:#0d47a1; margin-top:0; margin-bottom:15px; display: flex; align-items: center; gap: 8px;">
               <span>📍</span> Meetup Details
             </h5>
+
+            <!-- Validation Messages -->
+            <div id="meetupValidation" style="display: none; background: #ffebee; color: #c62828; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #c62828;">
+                <strong>⚠️ Please fill in all required meetup details:</strong>
+                <ul id="meetupErrors" style="margin: 5px 0 0 0; padding-left: 20px;"></ul>
+            </div>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div>
-                <label style="display: block; margin-bottom: 5px; font-weight: 500; color:#333;">Location</label>
-                <input type="text" name="meetup_location" placeholder="Enter meetup location"
+                <label style="display: block; margin-bottom: 5px; font-weight: 500; color:#333;">
+                  📍 Location *
+                </label>
+                <input type="text" name="meetup_location" id="meetup_location" placeholder="Enter meetup location" required
                        value="{{ arrangement.meetup_location if arrangement }}"
                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size:14px;">
+                <small style="color:#666; font-size:12px;">Where you will meet to exchange items</small>
               </div>
               <div>
-                <label style="display: block; margin-bottom: 5px; font-weight: 500; color:#333;">Time</label>
-                <input type="time" name="meetup_time" value="{{ arrangement.meetup_time if arrangement }}"
-                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size:14px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 500; color:#333;">
+                  ⏰ Time *
+                </label>
+                <input type="time" name="meetup_time" id="meetup_time" value="{{ arrangement.meetup_time if arrangement }}"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size:14px;" required>
+                <small style="color:#666; font-size:12px;">--:-- --</small>
               </div>
             </div>
             <div style="margin-top: 12px;">
-              <label style="display: block; margin-bottom: 5px; font-weight: 500; color:#333;">Date</label>
-              <input type="date" name="meetup_date" value="{{ arrangement.meetup_date if arrangement }}"
+              <label style="display: block; margin-bottom: 5px; font-weight: 500; color:#333;">
+                📅 Date *
+              </label>
+              <input type="date" name="meetup_date" id="meetup_date" value="{{ arrangement.meetup_date if arrangement }}"
+                     style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size:14px;" required>
+              <small style="color:#666; font-size:12px;">dd/mm/yyyy</small>
+            </div>
+
+            <!-- Additional Contact Details -->
+            <div style="margin-top: 12px;">
+              <label style="display: block; margin-bottom: 5px; font-weight: 500; color:#333;">
+                📞 Contact Number
+              </label>
+              <input type="text" name="meetup_contact" id="meetup_contact" placeholder="Your contact number for meetup"
+                     value="{{ user.contact if user }}"
                      style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size:14px;">
+              <small style="color:#666; font-size:12px;">Optional: Your contact number for coordination</small>
+            </div>
+
+            <!-- Save Meetup Details Button -->
+            <div style="margin-top: 20px; text-align: center;">
+              <button type="button" onclick="saveMeetupDetails()"
+                      style="padding: 12px 30px; background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
+                💾 Save Meetup Details
+              </button>
             </div>
           </div>
 
@@ -1079,7 +1114,7 @@ function suggestLocation() {
 
 function useSuggestion(location) {
     if (confirm(`Use this suggested location: "${location}"?`)) {
-        document.querySelector('input[name="meetup_location"]').value = location;
+        document.getElementById('meetup_location').value = location;
         document.getElementById('method').value = 'meetup';
         selectMethod('meetup');
         showNotification('Location applied to meetup details!', 'success');
@@ -1160,7 +1195,7 @@ function openLocationPicker() {
                 const location = `${lat}, ${lng}`;
 
                 if (confirm(`Use your current location? ${location}`)) {
-                    document.querySelector('input[name="meetup_location"]').value = `GPS: ${location}`;
+                    document.getElementById('meetup_location').value = `GPS: ${location}`;
                     document.getElementById('method').value = 'meetup';
                     selectMethod('meetup');
                 }
@@ -1296,6 +1331,123 @@ function sendSuggestionMessage(message) {
     })
     .catch(error => {
         showNotification('Network error. Please try again.', 'error');
+    });
+}
+
+// Function to validate and save meetup details
+function saveMeetupDetails() {
+    // Get form values
+    const location = document.getElementById('meetup_location').value.trim();
+    const time = document.getElementById('meetup_time').value;
+    const date = document.getElementById('meetup_date').value;
+    const contact = document.getElementById('meetup_contact').value.trim();
+
+    // Reset validation
+    document.getElementById('meetupValidation').style.display = 'none';
+    document.getElementById('meetupErrors').innerHTML = '';
+
+    // Validate required fields
+    const errors = [];
+
+    if (!location) {
+        errors.push('Meetup location is required');
+        document.getElementById('meetup_location').style.borderColor = '#f44336';
+    } else {
+        document.getElementById('meetup_location').style.borderColor = '#ddd';
+    }
+
+    if (!time) {
+        errors.push('Meetup time is required');
+        document.getElementById('meetup_time').style.borderColor = '#f44336';
+    } else {
+        document.getElementById('meetup_time').style.borderColor = '#ddd';
+    }
+
+    if (!date) {
+        errors.push('Meetup date is required');
+        document.getElementById('meetup_date').style.borderColor = '#f44336';
+    } else {
+        document.getElementById('meetup_date').style.borderColor = '#ddd';
+    }
+
+    // Check if date is in the future
+    if (date) {
+        const selectedDate = new Date(date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (selectedDate < today) {
+            errors.push('Meetup date must be in the future');
+            document.getElementById('meetup_date').style.borderColor = '#f44336';
+        }
+    }
+
+    // Show errors if any
+    if (errors.length > 0) {
+        document.getElementById('meetupValidation').style.display = 'block';
+        errors.forEach(error => {
+            const li = document.createElement('li');
+            li.textContent = error;
+            document.getElementById('meetupErrors').appendChild(li);
+        });
+
+        // Scroll to validation message
+        document.getElementById('meetupValidation').scrollIntoView({ behavior: 'smooth' });
+        return;
+    }
+
+    // If validation passes, submit the form
+    submitMeetupDetails(location, time, date, contact);
+}
+
+// Function to submit meetup details via AJAX
+function submitMeetupDetails(location, time, date, contact) {
+    // Show loading state
+    const saveBtn = document.querySelector('button[onclick="saveMeetupDetails()"]');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = '💾 Saving...';
+    saveBtn.disabled = true;
+
+    // Prepare data
+    const formData = new FormData();
+    formData.append('method', 'meetup');
+    formData.append('meetup_location', location);
+    formData.append('meetup_time', time);
+    formData.append('meetup_date', date);
+    formData.append('meetup_contact', contact);
+    formData.append('action', 'save_meetup');
+
+    // Send AJAX request
+    fetch(`/trade/{{ trade.trade_id }}/arrangement`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.text();
+    })
+    .then(data => {
+        // Show success message
+        showNotification('✅ Meetup details saved successfully!', 'success');
+
+        // Reset button
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+
+        // Reload the page after a short delay to show updated data
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('❌ Error saving meetup details. Please try again.', 'error');
+
+        // Reset button
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
     });
 }
 
@@ -1455,6 +1607,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (chatInput) chatInput.focus();
     }, 500);
     {% endif %}
+
+    // Add input event listeners to clear validation on type
+    const meetupInputs = ['meetup_location', 'meetup_time', 'meetup_date', 'meetup_contact'];
+
+    meetupInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('input', function() {
+                this.style.borderColor = '#ddd';
+            });
+        }
+    });
+
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('meetup_date');
+    if (dateInput) {
+        dateInput.min = today;
+    }
 });
 
 // Keyboard shortcuts
