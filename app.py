@@ -14,6 +14,7 @@ DB_NAME = "barterzone.db"
 
 
 def init_db():
+    """Initialize database with ALL columns including method agreement"""
     with sqlite3.connect(DB_NAME) as conn:
         # Users table
         conn.execute("""
@@ -25,7 +26,8 @@ def init_db():
             birthdate TEXT,
             location TEXT,
             full_name TEXT,
-            contact TEXT
+            contact TEXT,
+            is_admin BOOLEAN DEFAULT 0
         );
         """)
 
@@ -46,7 +48,7 @@ def init_db():
         );
         """)
 
-        # Updated Trades table with delivery/meet-up columns
+        # Trades table
         conn.execute("""
         CREATE TABLE IF NOT EXISTS trades (
             trade_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,6 +80,45 @@ def init_db():
         );
         """)
 
+        # Trade Arrangements table - WITH METHOD AGREEMENT COLUMNS
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS trade_arrangements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trade_id INTEGER NOT NULL,
+            initiator_id INTEGER NOT NULL,
+            method TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            meetup_location TEXT,
+            meetup_date TEXT,
+            meetup_time TEXT,
+            delivery_address TEXT,
+            delivery_date TEXT,
+            delivery_instructions TEXT,
+            courier_option TEXT,
+            tracking_number TEXT,
+            user1_confirmed_receipt BOOLEAN DEFAULT 0,
+            user2_confirmed_receipt BOOLEAN DEFAULT 0,
+            user1_confirmed_details BOOLEAN DEFAULT 0,
+            user2_confirmed_details BOOLEAN DEFAULT 0,
+            user1_confirmed_method BOOLEAN DEFAULT 0,  -- NEW COLUMN
+            user2_confirmed_method BOOLEAN DEFAULT 0,  -- NEW COLUMN
+            offer_delivery_address TEXT,
+            target_delivery_address TEXT,
+            offer_courier_option TEXT,
+            target_courier_option TEXT,
+            offer_delivery_date TEXT,
+            target_delivery_date TEXT,
+            offer_tracking_number TEXT,
+            target_tracking_number TEXT,
+            offer_delivery_instructions TEXT,
+            target_delivery_instructions TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
+            FOREIGN KEY (initiator_id) REFERENCES users (id)
+        );
+        """)
+
         # Trade messages table
         conn.execute("""
         CREATE TABLE IF NOT EXISTS trade_messages (
@@ -91,150 +132,123 @@ def init_db():
         );
         """)
 
+        # Trade Messages for Negotiation table
         conn.execute("""
-               CREATE TABLE IF NOT EXISTS trade_arrangements (
-                   id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   trade_id INTEGER NOT NULL,
-                   initiator_id INTEGER NOT NULL,
-                   method TEXT NOT NULL,
-                   status TEXT DEFAULT 'pending',
-                   meetup_location TEXT,
-                   meetup_date TEXT,
-                   meetup_time TEXT,
-                   delivery_address TEXT,
-                   delivery_date TEXT,
-                   delivery_instructions TEXT,
-                   courier_option TEXT,
-                   tracking_number TEXT,
-                   user1_confirmed_receipt BOOLEAN DEFAULT 0,
-                   user2_confirmed_receipt BOOLEAN DEFAULT 0,
-                   user1_confirmed_details BOOLEAN DEFAULT 0,
-                   user2_confirmed_details BOOLEAN DEFAULT 0,
-                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                   FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
-                   FOREIGN KEY (initiator_id) REFERENCES users (id)
-               );
-               """)
-
-        # NEW: Trade Messages table for negotiations
-        conn.execute("""
-               CREATE TABLE IF NOT EXISTS trade_messages_negotiation (
-                   id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   trade_id INTEGER NOT NULL,
-                   user_id INTEGER NOT NULL,
-                   message_type TEXT,
-                   content TEXT,
-                   suggested_location TEXT,
-                   suggested_date TEXT,
-                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                   FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
-                   FOREIGN KEY (user_id) REFERENCES users (id)
-               );
-               """)
-
-        # ADDED: Admin table
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS admin_table (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER UNIQUE NOT NULL,
-                username TEXT NOT NULL,
-                email TEXT,
-                full_name TEXT,
-                is_active BOOLEAN DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users (id)
-            );
+        CREATE TABLE IF NOT EXISTS trade_messages_negotiation (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trade_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            message_type TEXT,
+            content TEXT,
+            suggested_location TEXT,
+            suggested_date TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        );
         """)
 
-        # ADDED: User ratings table
+        # Admin table
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_ratings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                rated_user_id INTEGER NOT NULL,
-                rating_user_id INTEGER NOT NULL,
-                trade_id INTEGER NOT NULL,
-                rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-                comment TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (rated_user_id) REFERENCES users (id),
-                FOREIGN KEY (rating_user_id) REFERENCES users (id),
-                FOREIGN KEY (trade_id) REFERENCES trades (trade_id)
-            );
+        CREATE TABLE IF NOT EXISTS admin_table (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER UNIQUE NOT NULL,
+            username TEXT NOT NULL,
+            email TEXT,
+            full_name TEXT,
+            is_active BOOLEAN DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        );
         """)
 
-        # ADDED: User reports table
+        # User ratings table
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_reports (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                reported_user_id INTEGER NOT NULL,
-                reporting_user_id INTEGER NOT NULL,
-                trade_id INTEGER NOT NULL,
-                reason TEXT NOT NULL,
-                description TEXT,
-                status TEXT DEFAULT 'pending',
-                admin_notes TEXT,
-                resolved_by INTEGER,
-                resolved_at TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (reported_user_id) REFERENCES users (id),
-                FOREIGN KEY (reporting_user_id) REFERENCES users (id),
-                FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
-                FOREIGN KEY (resolved_by) REFERENCES users (id)
-            );
+        CREATE TABLE IF NOT EXISTS user_ratings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rated_user_id INTEGER NOT NULL,
+            rating_user_id INTEGER NOT NULL,
+            trade_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+            comment TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (rated_user_id) REFERENCES users (id),
+            FOREIGN KEY (rating_user_id) REFERENCES users (id),
+            FOREIGN KEY (trade_id) REFERENCES trades (trade_id)
+        );
         """)
 
-        # ADDED: User recommendations table
+        # User reports table
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_recommendations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                feedback_type TEXT NOT NULL,
-                priority TEXT NOT NULL,
-                title TEXT NOT NULL,
-                description TEXT NOT NULL,
-                contact_ok BOOLEAN DEFAULT 0,
-                status TEXT DEFAULT 'pending',
-                admin_notes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users (id)
-            );
+        CREATE TABLE IF NOT EXISTS user_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reported_user_id INTEGER NOT NULL,
+            reporting_user_id INTEGER NOT NULL,
+            trade_id INTEGER NOT NULL,
+            reason TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'pending',
+            admin_notes TEXT,
+            resolved_by INTEGER,
+            resolved_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (reported_user_id) REFERENCES users (id),
+            FOREIGN KEY (reporting_user_id) REFERENCES users (id),
+            FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
+            FOREIGN KEY (resolved_by) REFERENCES users (id)
+        );
         """)
 
-        # ADDED: Announcements table
+        # User recommendations table
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS announcements (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                admin_id INTEGER NOT NULL,
-                title TEXT NOT NULL,
-                content TEXT NOT NULL,
-                priority TEXT DEFAULT 'normal',
-                is_active BOOLEAN DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (admin_id) REFERENCES users (id)
-            );
+        CREATE TABLE IF NOT EXISTS user_recommendations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            feedback_type TEXT NOT NULL,
+            priority TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            contact_ok BOOLEAN DEFAULT 0,
+            status TEXT DEFAULT 'pending',
+            admin_notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        );
         """)
 
-        # ADDED: User bans table
+        # Announcements table
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_bans (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                admin_id INTEGER NOT NULL,
-                reason TEXT NOT NULL,
-                duration_days INTEGER,
-                banned_until TIMESTAMP,
-                is_permanent BOOLEAN DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT 1,
-                FOREIGN KEY (user_id) REFERENCES users (id),
-                FOREIGN KEY (admin_id) REFERENCES users (id)
-            );
+        CREATE TABLE IF NOT EXISTS announcements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            admin_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            priority TEXT DEFAULT 'normal',
+            is_active BOOLEAN DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (admin_id) REFERENCES users (id)
+        );
         """)
 
-        print("✅ All database tables created successfully!")
+        # User bans table
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS user_bans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            admin_id INTEGER NOT NULL,
+            reason TEXT NOT NULL,
+            duration_days INTEGER,
+            banned_until TIMESTAMP,
+            is_permanent BOOLEAN DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_active BOOLEAN DEFAULT 1,
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (admin_id) REFERENCES users (id)
+        );
+        """)
 
+        print("✅ All database tables created successfully with method agreement columns!")
 
 def add_user_specific_delivery_columns():
     """Add user-specific delivery columns"""
@@ -312,26 +326,57 @@ def add_item_availability_column():
             print(f"❌ Error adding item_available: {e}")
 
 def add_missing_columns():
-    """Add missing columns to existing tables"""
+    """Add any missing columns to existing tables"""
     try:
         with sqlite3.connect(DB_NAME) as conn:
-            # Add item_available column to items table if it doesn't exist
+            # Check and add missing columns to trade_arrangements
+            missing_columns = [
+                ('user1_confirmed_method', 'BOOLEAN DEFAULT 0'),
+                ('user2_confirmed_method', 'BOOLEAN DEFAULT 0'),
+                ('offer_delivery_address', 'TEXT'),
+                ('target_delivery_address', 'TEXT'),
+                ('offer_courier_option', 'TEXT'),
+                ('target_courier_option', 'TEXT'),
+                ('offer_delivery_date', 'TEXT'),
+                ('target_delivery_date', 'TEXT'),
+                ('offer_tracking_number', 'TEXT'),
+                ('target_tracking_number', 'TEXT'),
+                ('offer_delivery_instructions', 'TEXT'),
+                ('target_delivery_instructions', 'TEXT')
+            ]
+
+            for column_name, column_type in missing_columns:
+                try:
+                    conn.execute(f"ALTER TABLE trade_arrangements ADD COLUMN {column_name} {column_type}")
+                    print(f"✅ Added {column_name} column to trade_arrangements table")
+                except sqlite3.OperationalError as e:
+                    if "duplicate column name" in str(e):
+                        print(f"ℹ️ {column_name} column already exists")
+                    else:
+                        print(f"❌ Error adding {column_name}: {e}")
+
+            # Add item_available column if missing
             try:
                 conn.execute("ALTER TABLE items ADD COLUMN item_available BOOLEAN DEFAULT 1")
                 print("✅ Added item_available column to items table")
             except sqlite3.OperationalError as e:
                 if "duplicate column name" in str(e):
-                    print("ℹ️ item_available column already exists in items table")
-                else:
-                    print(f"❌ Error adding item_available: {e}")
+                    print("ℹ️ item_available column already exists")
 
-            # Add other missing columns...
             print("✅ All missing columns added successfully")
     except Exception as e:
         print(f"❌ Error adding columns: {e}")
 
+# Ensure DB exists with proper initialization
+if not os.path.exists(DB_NAME):
+    print("🔄 Creating new database with all tables...")
+    init_db()
+else:
+    print("ℹ️ Database already exists, checking for missing columns...")
+    add_missing_columns()
+
 def migrate_database():
-    """Comprehensive database migration with table renaming"""
+    """Comprehensive database migration with table renaming AND method agreement columns"""
     try:
         with sqlite3.connect(DB_NAME) as conn:
             # Check if old tbl_items exists and rename it
@@ -370,7 +415,6 @@ def migrate_database():
                 """)
                 print("✅ Created items table")
 
-            # Your existing migration code continues here...
             # Add missing columns to trades table
             missing_columns = [
                 ('meetup_preferred', 'BOOLEAN DEFAULT 0'),
@@ -421,6 +465,8 @@ def migrate_database():
                     user2_confirmed_receipt BOOLEAN DEFAULT 0,
                     user1_confirmed_details BOOLEAN DEFAULT 0,
                     user2_confirmed_details BOOLEAN DEFAULT 0,
+                    user1_confirmed_method BOOLEAN DEFAULT 0,  -- NEW COLUMN
+                    user2_confirmed_method BOOLEAN DEFAULT 0,  -- NEW COLUMN
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (trade_id) REFERENCES trades (trade_id),
@@ -444,6 +490,25 @@ def migrate_database():
                 );
                 """)
                 print("✅ Created new tables")
+            else:
+                # Table exists, add missing columns
+                print("🔄 Adding missing columns to existing trade_arrangements table...")
+
+                # Add method agreement columns if they don't exist
+                method_columns = [
+                    ('user1_confirmed_method', 'BOOLEAN DEFAULT 0'),
+                    ('user2_confirmed_method', 'BOOLEAN DEFAULT 0')
+                ]
+
+                for column_name, column_type in method_columns:
+                    try:
+                        conn.execute(f"ALTER TABLE trade_arrangements ADD COLUMN {column_name} {column_type}")
+                        print(f"✅ Added {column_name} column to trade_arrangements table")
+                    except sqlite3.OperationalError as e:
+                        if "duplicate column name" in str(e):
+                            print(f"ℹ️ {column_name} column already exists")
+                        else:
+                            print(f"❌ Error adding {column_name}: {e}")
 
             print("🎉 Database migration completed successfully!")
             add_missing_columns()
@@ -481,7 +546,6 @@ def register():
 
         with sqlite3.connect(DB_NAME) as conn:
             try:
-                # Check if username or email already exists
                 existing_user = conn.execute(
                     "SELECT id FROM users WHERE username = ? OR email = ?",
                     (username, email)
@@ -1085,6 +1149,7 @@ def respond_trade(trade_id):
     return redirect(url_for('view_trade_requests'))
 
 
+
 @app.route('/debug/trade/<int:trade_id>')
 def debug_trade(trade_id):
     """Debug route to check trade arrangement"""
@@ -1419,6 +1484,175 @@ def trade_arrangement(trade_id):
                            arrangement=arrangement,
                            messages=messages,
                            user_id=user_id)
+
+
+@app.route('/trade/<int:trade_id>/suggest_method', methods=['POST'])
+def suggest_method(trade_id):
+    """Suggest exchange method and handle user agreements"""
+    if 'user_id' not in session:
+        return jsonify({'status': 'error', 'message': 'Please login first'})
+
+    user_id = session['user_id']
+    data = request.json
+    suggested_method = data.get('method')
+    action = data.get('action')
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+
+        # Verify user is part of this trade
+        trade = conn.execute(
+            "SELECT * FROM trades WHERE trade_id = ? AND (offer_user_id = ? OR target_user_id = ?)",
+            (trade_id, user_id, user_id)
+        ).fetchone()
+
+        if not trade:
+            return jsonify({'status': 'error', 'message': 'Trade not found'})
+
+        # Get or create arrangement
+        arrangement = conn.execute(
+            "SELECT * FROM trade_arrangements WHERE trade_id = ?",
+            (trade_id,)
+        ).fetchone()
+
+        if action == 'suggest':
+            # Create or update arrangement with suggested method
+            if not arrangement:
+                conn.execute("""
+                    INSERT INTO trade_arrangements 
+                    (trade_id, initiator_id, method, status, user1_confirmed_method, user2_confirmed_method)
+                    VALUES (?, ?, ?, 'method_negotiation', 0, 0)
+                """, (trade_id, user_id, suggested_method))
+            else:
+                # Reset confirmations when method changes
+                conn.execute("""
+                    UPDATE trade_arrangements 
+                    SET method = ?, user1_confirmed_method = 0, user2_confirmed_method = 0,
+                        status = 'method_negotiation', updated_at = CURRENT_TIMESTAMP
+                    WHERE trade_id = ?
+                """, (suggested_method, trade_id))
+
+            # Add negotiation message
+            conn.execute("""
+                INSERT INTO trade_messages_negotiation 
+                (trade_id, user_id, message_type, content)
+                VALUES (?, ?, 'method_suggestion', ?)
+            """, (trade_id, user_id, f"Suggested {suggested_method} method for exchange"))
+
+            return jsonify({
+                'status': 'success',
+                'message': f'{suggested_method.title()} method suggested! Waiting for other user to agree.'
+            })
+
+        elif action == 'agree':
+            if not arrangement:
+                return jsonify({'status': 'error', 'message': 'No method suggested yet'})
+
+            # Determine which user is agreeing
+            if user_id == trade['offer_user_id']:
+                conn.execute(
+                    "UPDATE trade_arrangements SET user1_confirmed_method = 1 WHERE trade_id = ?",
+                    (trade_id,)
+                )
+                user_role = "offer_user"
+            else:
+                conn.execute(
+                    "UPDATE trade_arrangements SET user2_confirmed_method = 1 WHERE trade_id = ?",
+                    (trade_id,)
+                )
+                user_role = "target_user"
+
+            # Check if both agreed
+            updated_arrangement = conn.execute(
+                "SELECT user1_confirmed_method, user2_confirmed_method FROM trade_arrangements WHERE trade_id = ?",
+                (trade_id,)
+            ).fetchone()
+
+            if updated_arrangement['user1_confirmed_method'] and updated_arrangement['user2_confirmed_method']:
+                # Both agreed on method - update status
+                conn.execute(
+                    "UPDATE trade_arrangements SET status = 'method_confirmed' WHERE trade_id = ?",
+                    (trade_id,)
+                )
+                return jsonify({
+                    'status': 'method_confirmed',
+                    'message': '✅ Both users agreed on the exchange method! You can now proceed with arrangement details.'
+                })
+            else:
+                return jsonify({
+                    'status': 'waiting',
+                    'message': '✅ You agreed to the method! Waiting for other user to confirm.'
+                })
+
+        elif action == 'decline':
+            # User declined the suggested method
+            conn.execute("""
+                UPDATE trade_arrangements 
+                SET user1_confirmed_method = 0, user2_confirmed_method = 0,
+                    status = 'method_negotiation'
+                WHERE trade_id = ?
+            """, (trade_id,))
+
+            # Add negotiation message
+            conn.execute("""
+                INSERT INTO trade_messages_negotiation 
+                (trade_id, user_id, message_type, content)
+                VALUES (?, ?, 'method_declined', ?)
+            """, (trade_id, user_id, f"Declined {arrangement['method']} method"))
+
+            return jsonify({
+                'status': 'success',
+                'message': 'Method declined. Please suggest an alternative method.'
+            })
+
+@app.route('/trade/<int:trade_id>/get_arrangement_status')
+def get_arrangement_status(trade_id):
+    """Get current arrangement status for real-time updates"""
+    if 'user_id' not in session:
+        return jsonify({'status': 'error'})
+
+    user_id = session['user_id']
+
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+
+        arrangement = conn.execute("""
+            SELECT * FROM trade_arrangements WHERE trade_id = ?
+        """, (trade_id,)).fetchone()
+
+        if not arrangement:
+            return jsonify({
+                'status': 'no_arrangement',
+                'progress': {
+                    'step1': 'pending',
+                    'step2': 'pending',
+                    'step3': 'pending'
+                }
+            })
+
+        progress = {
+            'step1': 'pending',
+            'step2': 'pending',
+            'step3': 'pending'
+        }
+
+        if arrangement['status'] == 'method_confirmed':
+            progress['step1'] = 'completed'
+            progress['step2'] = 'active'
+        elif arrangement['status'] == 'accepted':
+            progress['step1'] = 'completed'
+            progress['step2'] = 'completed'
+            progress['step3'] = 'active'
+        elif arrangement['status'] == 'completed':
+            progress['step1'] = 'completed'
+            progress['step2'] = 'completed'
+            progress['step3'] = 'completed'
+
+        return jsonify({
+            'arrangement': dict(arrangement) if arrangement else None,
+            'progress': progress,
+            'current_step': arrangement['status'] if arrangement else 'no_arrangement'
+        })
 
 @app.route('/trade/<int:trade_id>/cancel', methods=['POST'])
 def cancel_trade_arrangement(trade_id):
