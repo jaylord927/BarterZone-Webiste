@@ -570,14 +570,11 @@ def dashboard():
     if is_admin_user():
         with sqlite3.connect(DB_NAME) as conn:
             conn.row_factory = sqlite3.Row
-
             # Get platform stats for admin
             total_users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
             total_items = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
-            active_trades = \
-            conn.execute("SELECT COUNT(*) FROM trades WHERE trade_status IN ('pending', 'accepted')").fetchone()[0]
-            completed_trades = conn.execute("SELECT COUNT(*) FROM trades WHERE trade_status = 'completed'").fetchone()[
-                0]
+            active_trades = conn.execute("SELECT COUNT(*) FROM trades WHERE trade_status IN ('pending', 'accepted')").fetchone()[0]
+            completed_trades = conn.execute("SELECT COUNT(*) FROM trades WHERE trade_status = 'completed'").fetchone()[0]
 
         return render_template('dashboard.html',
                                is_admin=True,
@@ -586,22 +583,36 @@ def dashboard():
                                active_trades=active_trades,
                                completed_trades=completed_trades)
 
-    # For TRADERS: Show normal trader dashboard
+    # For TRADERS: Show normal trader dashboard with proper status detection
     with sqlite3.connect(DB_NAME) as conn:
         conn.row_factory = sqlite3.Row
         items = conn.execute("""
             SELECT i.*, 
                    CASE 
-                       WHEN i.item_available = 0 THEN 'traded'
+                       -- Item is in completed trade (traded)
+                       WHEN EXISTS (
+                           SELECT 1 FROM trades 
+                           WHERE (offer_item_id = i.items_id OR target_item_id = i.items_id)
+                           AND trade_status = 'completed'
+                       ) THEN 'traded'
+                       -- Item is in active trade (pending/accepted)
                        WHEN EXISTS (
                            SELECT 1 FROM trades 
                            WHERE (offer_item_id = i.items_id OR target_item_id = i.items_id)
                            AND trade_status IN ('pending', 'accepted')
                        ) THEN 'in_trade'
+                       -- Item is available
                        ELSE 'available'
                    END as item_status
             FROM items i 
             WHERE i.user_id = ?
+            ORDER BY 
+                CASE 
+                    WHEN item_status = 'available' THEN 1
+                    WHEN item_status = 'in_trade' THEN 2
+                    WHEN item_status = 'traded' THEN 3
+                END,
+                i.items_id DESC
         """, (user_id,)).fetchall()
 
     return render_template('TraderOption.html', items=items, mode='view', is_admin=False)
@@ -755,13 +766,27 @@ def edit_item(id):
 
 @app.route('/delete_item/<int:id>')
 def delete_item(id):
-    """Delete an item"""
+    """Delete an item - with protection for items in active trades"""
     if 'user_id' not in session:
         flash('Please login first.', 'warning')
         return redirect(url_for('login'))
 
+    user_id = session['user_id']
+
     with sqlite3.connect(DB_NAME) as conn:
-        conn.execute("DELETE FROM items WHERE items_id=? AND user_id=?", (id, session['user_id']))
+        conn.row_factory = sqlite3.Row
+
+        active_trade = conn.execute("""
+            SELECT trade_id FROM trades 
+            WHERE (offer_item_id = ? OR target_item_id = ?)
+            AND trade_status IN ('pending', 'accepted')
+        """, (id, id)).fetchone()
+
+        if active_trade:
+            flash('Cannot delete item that is in an active trade!', 'error')
+            return redirect(url_for('dashboard'))
+
+        conn.execute("DELETE FROM items WHERE items_id=? AND user_id=?", (id, user_id))
 
     flash('Item deleted successfully!', 'info')
     return redirect(url_for('dashboard'))

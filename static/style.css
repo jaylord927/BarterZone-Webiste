@@ -1321,3 +1321,34 @@ footer {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* Enhanced status styles */
+.item-unavailable {
+    background: rgba(244, 67, 54, 0.95) !important;
+}
+
+.item-in-trade {
+    background: rgba(255, 152, 0, 0.95) !important;
+}
+
+.item-available {
+    background: rgba(76, 175, 80, 0.95) !important;
+}
+
+/* Disabled button styles */
+.btn-edit:disabled, .btn-delete:disabled {
+    background: #9e9e9e !important;
+    border-color: #9e9e9e !important;
+    cursor: not-allowed !important;
+    opacity: 0.7;
+}
+
+/* Clean up button special style */
+.btn-delete.cleanup {
+    background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%) !important;
+    border-color: #ff9800 !important;
+}
+
+.btn-delete.cleanup:hover {
+    background: linear-gradient(135deg, #f57c00 0%, #ffa733 100%) !important;
+}
