@@ -2465,6 +2465,84 @@ def ratings():
     with sqlite3.connect(DB_NAME) as conn:
         conn.row_factory = sqlite3.Row
 
+        # Get completed trades that can be rated (where user hasn't rated the other party yet)
+        rateable_trades = conn.execute("""
+            SELECT t.trade_id,
+                   t.offer_user_id,
+                   t.target_user_id,
+                   t.offer_item_id,
+                   t.target_item_id,
+                   oi.item_Name as offer_item_name,
+                   ti.item_Name as target_item_name,
+                   CASE 
+                       WHEN t.offer_user_id = ? THEN t.target_user_id
+                       ELSE t.offer_user_id
+                   END as user_to_rate,
+                   CASE 
+                       WHEN t.offer_user_id = ? THEN tu.full_name OR tu.username
+                       ELSE ou.full_name OR ou.username
+                   END as user_to_rate_name
+            FROM trades t
+            JOIN items oi ON t.offer_item_id = oi.items_id
+            JOIN items ti ON t.target_item_id = ti.items_id
+            JOIN users ou ON t.offer_user_id = ou.id
+            JOIN users tu ON t.target_user_id = tu.id
+            WHERE t.trade_status = 'completed'
+            AND (t.offer_user_id = ? OR t.target_user_id = ?)
+            AND NOT EXISTS (
+                SELECT 1 FROM user_ratings ur 
+                WHERE ur.trade_id = t.trade_id 
+                AND ur.rating_user_id = ?
+                AND ur.rated_user_id = CASE 
+                    WHEN t.offer_user_id = ? THEN t.target_user_id
+                    ELSE t.offer_user_id
+                END
+            )
+        """, (user_id, user_id, user_id, user_id, user_id, user_id)).fetchall()
+
+        # Get recent ratings received by current user
+        recent_ratings = conn.execute("""
+            SELECT ur.*, 
+                   u.username, 
+                   u.full_name,
+                   t.trade_id,
+                   oi.item_Name as offer_item_name,
+                   ti.item_Name as target_item_name
+            FROM user_ratings ur
+            JOIN users u ON ur.rating_user_id = u.id
+            JOIN trades t ON ur.trade_id = t.trade_id
+            JOIN items oi ON t.offer_item_id = oi.items_id
+            JOIN items ti ON t.target_item_id = ti.items_id
+            WHERE ur.rated_user_id = ?
+            ORDER BY ur.created_at DESC
+            LIMIT 5
+        """, (user_id,)).fetchall()
+
+        # Get current user's complete rating stats
+        user_rating_stats = conn.execute("""
+            SELECT 
+                AVG(rating) as average_rating,
+                COUNT(*) as total_ratings,
+                COUNT(CASE WHEN rating = 5 THEN 1 END) as five_star,
+                COUNT(CASE WHEN rating = 4 THEN 1 END) as four_star,
+                COUNT(CASE WHEN rating = 3 THEN 1 END) as three_star,
+                COUNT(CASE WHEN rating = 2 THEN 1 END) as two_star,
+                COUNT(CASE WHEN rating = 1 THEN 1 END) as one_star
+            FROM user_ratings 
+            WHERE rated_user_id = ?
+        """, (user_id,)).fetchone()
+
+        # Create user_rating dict with all needed fields
+        user_rating = {
+            'average_rating': user_rating_stats['average_rating'] or 0,
+            'total_ratings': user_rating_stats['total_ratings'] or 0,
+            '5_star': user_rating_stats['five_star'] or 0,
+            '4_star': user_rating_stats['four_star'] or 0,
+            '3_star': user_rating_stats['three_star'] or 0,
+            '2_star': user_rating_stats['two_star'] or 0,
+            '1_star': user_rating_stats['one_star'] or 0
+        }
+
         # Get all NON-ADMIN users with their average ratings
         all_users = conn.execute("""
             SELECT u.id, u.username, u.full_name, u.location,
@@ -2479,25 +2557,19 @@ def ratings():
             ORDER BY average_rating DESC, total_ratings DESC
         """, (user_id,)).fetchall()
 
-        # Get current user's rating stats - KEEP THE ORIGINAL VARIABLE NAME
-        user_rating = conn.execute("""
-            SELECT 
-                AVG(rating) as average_rating,
-                COUNT(*) as total_ratings
-            FROM user_ratings 
-            WHERE rated_user_id = ?
-        """, (user_id,)).fetchone()
-
     return render_template('ratings.html',
+                           rateable_trades=rateable_trades,
+                           recent_ratings=recent_ratings,
                            all_users=all_users,
-                           user_rating=user_rating,  # Keep original name
+                           user_rating=user_rating,
                            user_id=user_id)
 
 @app.route('/rate_user/<int:trade_id>/<int:user_to_rate_id>', methods=['POST'])
 def rate_user(trade_id, user_to_rate_id):
     """Rate another user after trade completion"""
     if 'user_id' not in session:
-        return jsonify({'status': 'error', 'message': 'Please login first'})
+        flash('Please login first.', 'warning')
+        return redirect(url_for('ratings'))
 
     user_id = session['user_id']
     rating = request.form.get('rating')
@@ -2509,18 +2581,20 @@ def rate_user(trade_id, user_to_rate_id):
 
     try:
         with sqlite3.connect(DB_NAME) as conn:
-            # Verify trade exists and user can rate
+            # Verify trade exists, is completed, and user can rate
             trade = conn.execute("""
                 SELECT * FROM trades 
-                WHERE trade_id = ? AND trade_status = 'completed'
+                WHERE trade_id = ? 
+                AND trade_status = 'completed'
                 AND (offer_user_id = ? OR target_user_id = ?)
-            """, (trade_id, user_id, user_id)).fetchone()
+                AND (? IN (offer_user_id, target_user_id))
+            """, (trade_id, user_id, user_id, user_to_rate_id)).fetchone()
 
             if not trade:
-                flash('Trade not found or not completed.', 'error')
+                flash('Trade not found or you cannot rate this user.', 'error')
                 return redirect(url_for('ratings'))
 
-            # Check if already rated
+            # Check if already rated this user for this trade
             existing_rating = conn.execute("""
                 SELECT * FROM user_ratings 
                 WHERE trade_id = ? AND rating_user_id = ? AND rated_user_id = ?
@@ -2540,9 +2614,8 @@ def rate_user(trade_id, user_to_rate_id):
             return redirect(url_for('ratings'))
 
     except Exception as e:
-        flash('Error submitting rating. Please try again.', 'error')
+        flash(f'Error submitting rating: {str(e)}', 'error')
         return redirect(url_for('ratings'))
-
 
 @app.route('/report_user', methods=['POST'])
 def report_user():
